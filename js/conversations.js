@@ -111,7 +111,7 @@ export async function switchConversation(id) {
             const selectedMode = modeConfig[currentMode] || modeConfig['default'];
             const welcomeMessage = selectedMode.welcomeMessage;
             // 显示欢迎消息
-            appendMessage('assistant', welcomeMessage);
+            appendMessage('assistant', welcomeMessage, 'first-message');
             console.log('Welcome message appended:', welcomeMessage);
             //TODO
         } else {
@@ -213,7 +213,7 @@ export async function startNewConversation(currentMode) {
     clearChatContainer();
 
     // 显示欢迎消息
-    appendMessage('assistant', welcomeMessage);
+    appendMessage('assistant', welcomeMessage, 'first-message');
     console.log('Welcome message appended:', welcomeMessage);
 
     // 重置 newmessages 数组

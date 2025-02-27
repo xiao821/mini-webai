@@ -137,7 +137,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
             // 为新消息创建ID
             const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
+            
             // 创建消息容器，但先不添加内容
             const messageElement = createEmptyAssistantMessage(messageId);
             removeTypingIndicator();

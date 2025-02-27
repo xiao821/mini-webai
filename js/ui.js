@@ -18,7 +18,7 @@ export function initializeElements(elements) {
     elements.questionButton = document.getElementById('question');
     elements.settingButton = document.getElementById('setting');
     elements.uploadButton = document.getElementById('Uploadfile');
-    elements.welcomeMessageContainer = document.getElementById('welcome-message');
+    elements.welcomeMessageContainer = document.getElementById('welcome-message-container');
     elements.modeButtons = document.querySelectorAll('.mode-button');
 }
 
@@ -33,7 +33,7 @@ export function adjustTextareaHeight() {
 export function setWelcomeMessage(mode) {
     const { currentModeTitle, welcomeMessageContainer } = elements;
     const selectedMode = modeConfig[mode] || modeConfig['default'];
-
+    console.log(selectedMode);
     currentModeTitle.textContent = selectedMode.title;
     welcomeMessageContainer.innerHTML = `
         <div class="flex items-start">
@@ -97,13 +97,14 @@ export function clearChatContainer() {
 export function createEmptyAssistantMessage(messageId) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex items-start';
-
-    messageDiv.innerHTML = `
-        <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold mr-3 flex-shrink-0">
-            AI
-        </div>
+    // 如果这是第一个消息，则设置为欢迎消息
+    console.log('messageId', messageId);
+        messageDiv.innerHTML = `
+            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold mr-3 flex-shrink-0">
+                AI
+            </div>
         <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl">
-            <div class="markdown-content">
+            <div ${messageId=='' ? 'id="welcome-message-content" class="markdown-content"' : 'class="markdown-content"'}>
             </div>
             <div class="flex items-center mt-4 space-x-2 text-gray-400">
                 <button class="feedback-btn like-btn hover:text-green-500 p-1 rounded" data-message-id="${messageId}">

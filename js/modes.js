@@ -1,7 +1,7 @@
-import { elements, setWelcomeMessage } from './ui.js';
+import { elements, setWelcomeMessage, clearChatContainer } from './ui.js';
 import { modeConfig } from './config.js';
 import { startNewConversation, getConversationById, getCurrentConversationId } from './conversations.js';
-
+import { appendMessage } from './messaging.js';
 // 当前选中的模式
 let currentMode = 'dataresource';
 
@@ -18,10 +18,11 @@ export function setCurrentMode(mode) {
 // 切换模式
 export async function switchMode(mode) {
     if (modeConfig[mode]) {
+        clearChatContainer();
         // 更新当前模式标题
         document.getElementById('current-mode-title').textContent = modeConfig[mode].title;
     // 设置欢迎信息
-    setWelcomeMessage(mode);
+    // setWelcomeMessage(mode);
     // 更新UI
     elements.modeButtons.forEach(m => {
         if (m.id === mode) {
@@ -30,19 +31,23 @@ export async function switchMode(mode) {
         } else {
             m.classList.remove('bg-blue-100', 'text-blue-700');
             m.classList.add('text-gray-700', 'hover:bg-gray-100');
-        }
+        }   
     });
 
     // 更新当前模式和标题
-    currentMode = mode;
+    currentMode = modeConfig[mode];
 
 
     // 如果当前对话没有消息，就直接更新模式
     const currentConversation = getConversationById(getCurrentConversationId());
     if (currentConversation && currentConversation.messages.length === 0) {
-        currentConversation.mode = mode;
-        setWelcomeMessage(mode);
+        // console.log('currentConversation', currentConversation);
+        const welcomeMessage = currentMode.welcomeMessage;
+        // 显示欢迎消息
+        appendMessage('assistant', welcomeMessage, 'first-message');
     } else {
+        // console.log('currentConversation', currentConversation);
+        console.log('create new conversation');
         // 否则创建新对话
         await startNewConversation(mode);
     }

@@ -93,8 +93,6 @@ export function updateMessageContent(messageId, content) {
 
 // 发送消息
 export async function sendMessage(message, currentConversationId, currentMode, isWaitingForResponse) {
-
-    
     if (isWaitingForResponse) return false;
     
     // 添加用户消息到UI
@@ -109,7 +107,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
         content: message
     });
 
-    // 更新对话标题（如果是第一条用户消息）
+    // 更新对话标题（如果是第一条用户消息） TODO 后面从后端获取
     if (currentConversation.messages.filter(m => m.role === 'user').length === 1) {
         currentConversation.title = message.length > 20
             ? message.substring(0, 20) + '...'
@@ -186,7 +184,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                                     const content = delta.content;
 
                                     if (content === "" || content.includes("<think>")) {
-                                        fullContent += "```思考过程\n";
+                                        fullContent += "```思考过程";
                                         think_status = 1;
                                         continue;
                                     } else if (content.includes("</think>")) {

@@ -33,7 +33,7 @@ export function adjustTextareaHeight() {
 export function setWelcomeMessage(mode) {
     const { currentModeTitle, welcomeMessageContainer } = elements;
     const selectedMode = modeConfig[mode] || modeConfig['default'];
-    
+
     currentModeTitle.textContent = selectedMode.title;
     welcomeMessageContainer.innerHTML = `
         <div class="flex items-start">
@@ -103,7 +103,8 @@ export function createEmptyAssistantMessage(messageId) {
             AI
         </div>
         <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl">
-            <div class="markdown-content"></div>
+            <div class="markdown-content">
+            </div>
             <div class="flex items-center mt-4 space-x-2 text-gray-400">
                 <button class="feedback-btn like-btn hover:text-green-500 p-1 rounded" data-message-id="${messageId}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

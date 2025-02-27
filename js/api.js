@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_AUTH_TOKEN, USER_ID } from './config.js';
+import { modeConfig } from './config.js';
 
 // 获取新会话ID
 export async function generateId() {

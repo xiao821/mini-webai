@@ -1,6 +1,7 @@
 import { elements, renderMarkdown, appendTypingIndicator, removeTypingIndicator, createEmptyAssistantMessage } from './ui.js';
 import { sendChatCompletion } from './api.js';
 import { getConversationById, updateConversation } from './conversations.js';
+import { handleFeedback } from './feedback.js';
 
 // 添加消息到UI
 export function appendMessage(role, content, messageId = null) {

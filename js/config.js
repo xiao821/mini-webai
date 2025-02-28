@@ -8,11 +8,11 @@ export const USER_ID = getRandomIdFromCookie();
 
 // 模式配置
 export const modeConfig = {
-    'crawl_data': {
-        icon: '🔍',
-        title: '爬虫资源',
-        welcomeMessage: '👋 欢迎使用爬虫资源模式！我可以帮助您查询和分析现在数据库中的各种爬虫资源。'
-    },
+    // 'crawl_data': {
+    //     icon: '🔍',
+    //     title: '爬虫资源',
+    //     welcomeMessage: '👋 欢迎使用爬虫资源模式！我可以帮助您查询和分析现在数据库中的各种爬虫资源。'
+    // },
     'default': {
         icon: '🏥',
         title: '医保咨询',

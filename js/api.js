@@ -3,6 +3,7 @@ import { modeConfig } from './config.js';
 
 // 获取新会话ID
 export async function generateId() {
+    console.log('generateId',USER_ID);
     try {
         const response = await axios.get(`${API_BASE_URL}/api/chatid`, {
             params: { 'user_id': USER_ID },
@@ -17,6 +18,7 @@ export async function generateId() {
 
 // 获取会话历史列表
 export async function fetchChatList() {
+    console.log('fetchChatList',USER_ID);
     try {
         const response = await axios.get(`${API_BASE_URL}/api/chat_id_title_list`, {
             params: { 'user_id': USER_ID },

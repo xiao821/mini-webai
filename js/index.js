@@ -1,6 +1,6 @@
 import { elements, initializeElements, adjustTextareaHeight, setWelcomeMessage } from './ui.js';
 import { sendMessage } from './messaging.js';
-import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId } from './conversations.js';
+import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
 import { modeConfig } from './config.js';
@@ -16,9 +16,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // 初始化应用
     initializeApp();
 
+    // 获取userid，存入cookie中
+    setRandomIdInCookie()
+
     renderModeButtons();
     // 添加事件监听
     setupEventListeners();
+
+
 
     // 初始加载默认模式欢迎信息
     // setWelcomeMessage('default');

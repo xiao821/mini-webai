@@ -1,7 +1,10 @@
+import { getRandomIdFromCookie } from './conversations.js'
+
 // 基础配置
 export const API_BASE_URL = 'https://lgdev.baicc.cc/';
 export const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
-export const USER_ID = 'medical_insurance_user';
+export const USER_ID = getRandomIdFromCookie();
+// export const USER_ID = 'medical_insurance_user';
 
 // 模式配置
 export const modeConfig = {

@@ -9,6 +9,42 @@ let conversations = [];
 let currentConversationId = null;
 let newmessages = [];
 
+
+// 生成一个随机的ID
+export function generateRandomId() {
+    return 'id_' + Math.random().toString(36).substr(2, 8); // 生成一个8位的随机ID
+}
+
+// 存储随机 ID 到 Cookie 中
+export function setRandomIdInCookie() {
+    // 判断是否存在id
+    const existingId = getRandomIdFromCookie();
+    if (existingId) {
+        console.log(`Cookie中已存在随机ID: ${existingId}`);
+        return; // 如果已经存在则不再设置
+    }
+
+    const randomId = generateRandomId();
+    // 设置过期时间为 2099 年 12 月 31 日 23:59:59 GMT
+    const expires = "Fri, 31 Dec 2099 23:59:59 GMT";
+
+    // 设置 id，包含随机 ID 和过期时间
+    document.cookie = `blue_Medicine_Id=${randomId}; expires=${expires}; path=/`;
+    console.log(`Random ID stored in cookie: ${randomId}`);
+}
+
+// 获取 cookie中设置的 随机 ID
+export function getRandomIdFromCookie() {
+    const cookieArray = document.cookie.split('; ');
+    for (let i = 0; i < cookieArray.length; i++) {
+        const cookie = cookieArray[i].split('=');
+        if (cookie[0] === 'blue_Medicine_Id') {
+            return cookie[1];
+        }
+    }
+    return null; // 如果没有随机 ID，返回 null
+}
+
 // 获取特定ID的会话
 export function getConversationById(id) {
     console.log('Getting conversation by ID:', id);

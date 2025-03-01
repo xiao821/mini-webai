@@ -3,7 +3,7 @@ import { sendMessage } from './messaging.js';
 import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
-import { modeConfig } from './config.js';
+import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
 
 // 全局状态
 let isWaitingForResponse = false;
@@ -23,11 +23,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // 添加事件监听
     setupEventListeners();
 
-
-
     // 初始加载默认模式欢迎信息
     // setWelcomeMessage('default');
 });
+
+let currentModel = R1_MODEL
+// 切换模型
+const toggle = document.getElementById('model-toggle');
+toggle.addEventListener('change', function () {
+    if (this.checked) {
+        currentModel = R1_MODEL; // R1_MODEL
+        console.log('选择的模型是: R1_MODEL');
+    } else {
+        currentModel = QW_MODEL; // QW_MODEL
+        console.log('选择的模型是: QW_MODEL');
+    }
+});
+export { currentModel }
+
 
 // 初始化应用
 async function initializeApp() {

@@ -1,4 +1,5 @@
 import { modeConfig } from './config.js';
+import { handleFeedback } from './feedback.js';
 
 // DOM元素引用存储
 export const elements = {};
@@ -120,6 +121,21 @@ export function createEmptyAssistantMessage(messageId) {
             </div>
         </div>
     `;
+
+    
+    // 为AI消息添加反馈按钮事件
+    if (messageId) {
+        const likeBtn = messageDiv.querySelector('.like-btn');
+        const dislikeBtn = messageDiv.querySelector('.dislike-btn');
+        if (likeBtn && dislikeBtn) {
+            likeBtn.addEventListener('click', function () {
+                handleFeedback(messageId, 'like');
+            });
+            dislikeBtn.addEventListener('click', function () {
+                handleFeedback(messageId, 'dislike');
+            });
+        }
+    }
 
     return messageDiv;
 } 

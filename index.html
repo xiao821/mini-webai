@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智能助手</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
-    <!-- Include SweetAlert2 from a CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     <script src="https://cdn.tailwindcss.com"></script>
+
+     <script src="./js/marked.min.js"></script>
+     <script src="./js/purify.min.js"></script>
+     <script src="./js/sweetalert2.js"></script>
+
     <link rel="stylesheet" href="./css/index.css">
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen flex">
@@ -85,6 +86,13 @@
 
         <!-- 输入区域 -->
         <div class="p-4 border-t border-gray-200 bg-white">
+            <div class="flex items-center mb-4">
+                <input type="checkbox" id="model-toggle" class="toggle-checkbox hidden" checked />
+                <label for="model-toggle" class="toggle-label rounded-full w-12 h-6 flex items-center p-1 cursor-pointer">
+                    <span class="toggle-dot bg-white rounded-full w-4 h-4 transition-transform duration-300"></span>
+                </label>
+                <span class="ml-2 text-sm font-medium">深度思考(R1)</span>
+            </div>
             <form id="chat-form" class="flex items-end">
                 <div class="flex-1 relative">
                     <textarea 
@@ -168,5 +176,15 @@
 
     <script src="./js/axios.min.js"></script>
     <script type="module" src="js/index.js"></script>
+    <!-- <script>
+        const toggle = document.getElementById('model-toggle');
+        toggle.addEventListener('change', function() {
+            if (this.checked) {
+                console.log('选择的模型是: R1_MODEL');
+            } else {
+                console.log('选择的模型是: QW_MODEL');
+            }
+        });
+    </script> -->
 </body>
 </html>

@@ -79,3 +79,22 @@ body {
 .header-button:hover {
     background-color: #f3f4f6; /* hover:bg-gray-100 */
 }
+
+
+.toggle-label {
+    background-color: #d1d5db;
+    position: relative;
+    transition: background-color 0.3s;
+}
+.toggle-dot {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s;
+}
+.toggle-checkbox:checked + .toggle-label .toggle-dot {
+    transform: translate(132%, -50%);
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #3b82f6;
+}

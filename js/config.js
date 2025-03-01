@@ -5,6 +5,8 @@ export const API_BASE_URL = 'https://lgdev.baicc.cc/';
 export const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 export const USER_ID = getRandomIdFromCookie();
 // export const USER_ID = 'medical_insurance_user';
+export const R1_MODEL = 'deepseek-32b-r1'
+export const QW_MODEL = 'qwen2.5-72b'
 
 // 模式配置
 export const modeConfig = {

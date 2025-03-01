@@ -1,9 +1,10 @@
-import { API_BASE_URL, API_AUTH_TOKEN, USER_ID } from './config.js';
+import { API_BASE_URL, API_AUTH_TOKEN, USER_ID, R1_MODEL, QW_MODEL } from './config.js';
 import { modeConfig } from './config.js';
+import { currentModel } from './index.js';
 
 // 获取新会话ID
 export async function generateId() {
-    console.log('generateId',USER_ID);
+    console.log('generateId', USER_ID);
     try {
         const response = await axios.get(`${API_BASE_URL}/api/chatid`, {
             params: { 'user_id': USER_ID },
@@ -18,7 +19,7 @@ export async function generateId() {
 
 // 获取会话历史列表
 export async function fetchChatList() {
-    console.log('fetchChatList',USER_ID);
+    console.log('fetchChatList', USER_ID);
     try {
         const response = await axios.get(`${API_BASE_URL}/api/chat_id_title_list`, {
             params: { 'user_id': USER_ID },
@@ -64,10 +65,11 @@ export async function deleteChatById(chatId) {
 
 // 发送消息到API
 export async function sendChatCompletion(currentConversationId, messages, currentMode) {
+
     try {
         // 准备请求数据
         const requestData = {
-            model: "deepseek-32b-r1",
+            model: currentModel,
             messages: messages,
             max_tokens: 2048,
             temperature: 0.6,

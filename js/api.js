@@ -117,16 +117,39 @@ export function record_voice(audioBlob) {
         },
     }).then(response => {
         console.log("识别结果:", response.data);
-const messageInput = document.getElementById('message-input');
-messageInput.value = response.data.text; // 使用 value 属性
+        const messageInput = document.getElementById('message-input');
+        messageInput.value = response.data.text; // 使用 value 属性
 
-// 手动触发 input 事件
-const event = new Event('input', {
-    bubbles: true,
-    cancelable: true,
-});
-messageInput.dispatchEvent(event);
+        // 手动触发 input 事件
+        const event = new Event('input', {
+            bubbles: true,
+            cancelable: true,
+        });
+        messageInput.dispatchEvent(event);
     }).catch(error => {
         console.error("识别失败:", error);
     });
 }
+
+// // 获取录音文件
+// export function getAudioFile(text) {
+//     const response = axios.post(`${BASE_URL}/api/tts`, { tts_text: text }, { responseType: 'blob' })
+//     .then(function (response) {
+//         const blob = new Blob([response.data], { type: 'audio/mpeg' }); // 确保类型正确
+//         const url = URL.createObjectURL(blob);
+//         audioElement.src = url;
+
+//         // 监听音频播放结束事件
+//         audioElement.onended = function () {
+//             playButton.style.display = 'block';
+//             pauseButton.style.display = 'none';
+//         };
+
+//         // 播放音频
+//         audioElement.play();
+//     })
+//     .catch(function (err) {
+//         console.log(err);
+//     });
+//     return response;
+// }

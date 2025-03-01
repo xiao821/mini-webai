@@ -77,13 +77,13 @@ export function updateMessageContent(messageId, content) {
 // 发送消息
 export async function sendMessage(message, currentConversationId, currentMode, isWaitingForResponse) {
     if (isWaitingForResponse) return false;
-    
+
     // 添加用户消息到UI
     appendMessage('user', message);
 
     // 获取当前会话
     const currentConversation = getConversationById(currentConversationId);
-    
+
     // 添加用户消息到会话
     currentConversation.messages.push({
         role: 'user',
@@ -102,15 +102,15 @@ export async function sendMessage(message, currentConversationId, currentMode, i
     elements.messageInput.value = '';
     elements.messageInput.style.height = 'auto';
     elements.sendButton.disabled = true;
-    
+
     // 显示加载指示器
     appendTypingIndicator();
-    
+
     try {
         // 调用API获取响应
         const response = await sendChatCompletion(
-            currentConversationId, 
-            currentConversation.messages.slice(-10), 
+            currentConversationId,
+            currentConversation.messages.slice(-10),
             currentMode
         );
 
@@ -120,10 +120,9 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
             // 为新消息创建ID
             const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            
+
             // 创建消息容器，但先不添加内容
             const messageElement = createEmptyAssistantMessage(messageId);
-            removeTypingIndicator();
             elements.chatContainer.appendChild(messageElement);
 
             // 获取消息内容容器，用于添加流式内容
@@ -132,6 +131,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             let fullContent = "";
             let accumulatedContent = "";
             let think_status = 0;
+            let firstCharacterRendered = false; // 用于标记第一个字符是否已渲染
 
             // 通过reader.read()处理流式响应
             while (true) {
@@ -179,6 +179,12 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                                     fullContent += content;
                                     accumulatedContent += content;
 
+                                    // 检查是否是第一个字符
+                                    if (!firstCharacterRendered && fullContent.length > 0) {
+                                        removeTypingIndicator(); // 在第一个字符渲染时移除指示器
+                                        firstCharacterRendered = true; // 标记第一个字符已渲染
+                                    }
+
                                     // 积累一定量的内容后再更新UI，以提高性能
                                     if (accumulatedContent.length > 10 || content.includes("\n")) {
                                         renderMarkdown(contentElement, fullContent);
@@ -207,7 +213,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                 content: fullContent,
                 id: messageId
             });
-            
+
             // 更新会话
             updateConversation(currentConversation);
 

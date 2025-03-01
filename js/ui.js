@@ -1,5 +1,6 @@
 import { modeConfig } from './config.js';
 import { handleFeedback } from './feedback.js';
+// import { getAudioFile } from './api.js';
 
 // DOM元素引用存储
 export const elements = {};
@@ -119,6 +120,11 @@ export function createEmptyAssistantMessage(messageId) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                     </svg>
                 </button>
+                <button class="play-btn hover:text-blue-500 p-1 rounded" data-message-id="${messageId}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16l8-8-8-8z" />
+                    </svg>
+                </button>
             </div>
         </div>
     `;
@@ -128,6 +134,8 @@ export function createEmptyAssistantMessage(messageId) {
     if (messageId) {
         const likeBtn = messageDiv.querySelector('.like-btn');
         const dislikeBtn = messageDiv.querySelector('.dislike-btn');
+        const playBtn = messageDiv.querySelector('.play-btn');
+
         if (likeBtn && dislikeBtn) {
             likeBtn.addEventListener('click', function () {
                 handleFeedback(messageId, 'like');
@@ -136,7 +144,44 @@ export function createEmptyAssistantMessage(messageId) {
                 handleFeedback(messageId, 'dislike');
             });
         }
+        if (playBtn) {
+            playBtn.addEventListener('click', function () {
+                togglePlayback(messageId);
+            });
+        }
     }
 
     return messageDiv;
 } 
+
+// let audio; // 用于播放录音
+
+// function togglePlayback(messageId) {
+//     const playBtn = document.querySelector(`.play-btn[data-message-id="${messageId}"]`);
+//     const audioUrl = getAudioFile(); // 替换为实际的录音文件路径
+
+//     if (audio && !audio.paused) {
+//         audio.pause();
+//         playBtn.innerHTML = `
+//             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16l8-8-8-8z" />
+//             </svg>
+//         `; // 设置为播放图标
+//     } else {
+//         audio = new Audio(audioUrl);
+//         audio.play();
+//         playBtn.innerHTML = `
+//             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16l8-8-8-8z" />
+//             </svg>
+//         `; // 设置为暂停图标
+
+//         audio.onended = () => {
+//             playBtn.innerHTML = `
+//                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16l8-8-8-8z" />
+//                 </svg>
+//             `; // 播放结束后恢复为播放图标
+//         };
+//     }
+// }

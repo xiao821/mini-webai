@@ -4,9 +4,13 @@ import { initializeConversations, startNewConversation, switchConversation, getC
 import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
 import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
+import { record_voice } from './api.js';
 
 // 全局状态
 let isWaitingForResponse = false;
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
 
 // 当DOM加载完成后
 document.addEventListener('DOMContentLoaded', function () {
@@ -146,6 +150,47 @@ function setupEventListeners() {
             timer: 1000
         });
     });
+
+    // 获取用户麦克风权限并开始录音
+    elements.recordButton.addEventListener('click', async () => {
+        const button = document.getElementById('record-button');
+
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = async () => {
+                    if (audioChunks.length > 0) { // 确保有录音数据
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        await record_voice(audioBlob);
+                        audioChunks = []; // 清空录音数据
+                    } else {
+                        console.error("没有录音数据");
+                    }
+                };
+                mediaRecorder.start();
+
+                document.getElementById('record-button').style.backgroundColor = "red";
+                isRecording = true;
+                button.innerText = "停";
+                // document.getElementById('result').innerText = "录音中...";
+            } catch (error) {
+                console.error("无法访问麦克风:", error);
+                document.getElementById('result').innerText = "无法访问麦克风，请检查权限。";
+            }
+        } else {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                isRecording = false;
+                button.innerText = "录";
+                document.getElementById('record-button').style.backgroundColor = "#007bff";
+            }
+        }
+    });
+
     // 初始化模式按钮
     initModeButtons();
 

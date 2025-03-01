@@ -21,6 +21,7 @@ export function initializeElements(elements) {
     elements.uploadButton = document.getElementById('Uploadfile');
     elements.welcomeMessageContainer = document.getElementById('welcome-message-container');
     elements.modeButtons = document.querySelectorAll('.mode-button');
+    elements.recordButton = document.getElementById('record-button');
 }
 
 // 调整文本输入框高度

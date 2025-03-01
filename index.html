@@ -107,6 +107,9 @@
                         </button>
                     </div>
                 </div>
+                <button type="button" id="record-button" class="record-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700">
+                    录
+                </button>
                 <button 
                     type="submit" 
                     id="send-button"
@@ -115,6 +118,7 @@
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                 </button>
+
             </form>
         </div>
         
@@ -176,15 +180,5 @@
 
     <script src="./js/axios.min.js"></script>
     <script type="module" src="js/index.js"></script>
-    <!-- <script>
-        const toggle = document.getElementById('model-toggle');
-        toggle.addEventListener('change', function() {
-            if (this.checked) {
-                console.log('选择的模型是: R1_MODEL');
-            } else {
-                console.log('选择的模型是: QW_MODEL');
-            }
-        });
-    </script> -->
 </body>
 </html>

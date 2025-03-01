@@ -151,3 +151,37 @@ body {
     overflow-x: auto;
     margin: 1rem 0;
 }
+
+.record-button {
+    transition: background-color 0.3s, transform 0.2s;
+    height: 56px;
+    width: 56px;
+}
+
+.record-button.recording {
+    background-color: red; /* 录音时的背景色 */
+    transform: scale(1.1); /* 录音时的放大效果 */
+}
+
+#chat-form {
+    display: flex; /* 使用 Flexbox 布局 */
+    align-items: center; /* 垂直居中对齐 */
+}
+
+textarea {
+    flex: 1; /* 使输入框占据剩余空间 */
+    margin-right: 8px; /* 添加右边距以分隔按钮 */
+}
+
+.record-button, .send-button {
+    margin-left: 8px; /* 添加左边距以分隔按钮 */
+}
+
+.record-button {
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.record-button.recording {
+    background-color: red; /* 录音时的背景色 */
+    transform: scale(1.1); /* 录音时的放大效果 */
+}

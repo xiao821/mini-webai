@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_AUTH_TOKEN, USER_ID, R1_MODEL, QW_MODEL } from './config.js';
+import { API_BASE_URL, API_AUTH_TOKEN, USER_ID, R1_MODEL, QW_MODEL, BASE_URL_VOICE } from './config.js';
 import { modeConfig } from './config.js';
 import { currentModel } from './index.js';
 
@@ -99,4 +99,26 @@ export async function sendChatCompletion(currentConversationId, messages, curren
         console.error('发送聊天请求失败:', error);
         throw error;
     }
-} 
+}
+
+// 语言识别输入
+export function record_voice(audioBlob) {
+    console.log("开始识别", audioBlob);
+
+    // 创建 FormData 对象
+    const formData = new FormData();
+    formData.append("file", audioBlob, "recording.wav"); // 添加 Blob 到 FormData
+    formData.append('model', 'FunAudioLLM/SenseVoiceSmall');
+
+    // 发送请求
+    axios.post(`${BASE_URL_VOICE}/api/asr`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data", // 设置请求头
+        },
+    }).then(response => {
+        console.log("识别结果:", response.data);
+        document.getElementById('message-input').innerText = response.data.text;
+    }).catch(error => {
+        console.error("识别失败:", error);
+    });
+}

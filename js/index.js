@@ -1,7 +1,7 @@
 import { elements, initializeElements, adjustTextareaHeight, setWelcomeMessage } from './ui.js';
 import { sendMessage } from './messaging.js';
 import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
-import { getCurrentMode, initModeButtons, renderModeButtons } from './modes.js';
+import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
 import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
 
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setRandomIdInCookie()
 
     renderModeButtons();
+
     // 添加事件监听
     setupEventListeners();
 
@@ -65,6 +66,15 @@ async function initializeApp() {
 
 // 设置事件监听器
 function setupEventListeners() {
+    console.log('设置事件监听器');
+
+    // 当按下回车键且没有按shift时，发送消息
+    elements.messageInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            elements.chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    });
 
     // 消息输入事件
     elements.messageInput.addEventListener('input', function () {

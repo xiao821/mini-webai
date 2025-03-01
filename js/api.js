@@ -117,7 +117,15 @@ export function record_voice(audioBlob) {
         },
     }).then(response => {
         console.log("识别结果:", response.data);
-        document.getElementById('message-input').innerText = response.data.text;
+const messageInput = document.getElementById('message-input');
+messageInput.value = response.data.text; // 使用 value 属性
+
+// 手动触发 input 事件
+const event = new Event('input', {
+    bubbles: true,
+    cancelable: true,
+});
+messageInput.dispatchEvent(event);
     }).catch(error => {
         console.error("识别失败:", error);
     });

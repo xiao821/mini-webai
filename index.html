@@ -102,14 +102,28 @@
                         rows="1"
                     ></textarea>
                     <div class="absolute right-3 bottom-3 text-gray-400 flex">
+                        <button type="button" class="p-1 hover:text-gray-600" id="record-button">
+                            <svg id="mic-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                            <svg id="mic-on" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
                         <button type="button" class="p-1 hover:text-gray-600" id="Uploadfile">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                         </button>
                     </div>
                 </div>
-                <button type="button" id="record-button" class="record-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700">
+                <!-- <button type="button" id="record-button" class="record-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700">
                     录
-                </button>
+                </button> -->
                 <button 
                     type="submit" 
                     id="send-button"

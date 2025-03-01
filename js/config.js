@@ -2,7 +2,7 @@ import { getRandomIdFromCookie } from './conversations.js'
 
 // 基础配置
 export const API_BASE_URL = 'https://lgdev.baicc.cc/';
-export const BASE_URL_VOICE = '';
+export const BASE_URL_VOICE = 'https://nlp-demo.szmckj.cn/';
 export const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 export const USER_ID = getRandomIdFromCookie();
 // export const USER_ID = 'medical_insurance_user';

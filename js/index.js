@@ -154,6 +154,8 @@ function setupEventListeners() {
     // 获取用户麦克风权限并开始录音
     elements.recordButton.addEventListener('click', async () => {
         const button = document.getElementById('record-button');
+        const micOff = document.getElementById('mic-off');
+        const micOn = document.getElementById('mic-on');
 
         if (!isRecording) {
             try {
@@ -173,20 +175,21 @@ function setupEventListeners() {
                 };
                 mediaRecorder.start();
 
-                document.getElementById('record-button').style.backgroundColor = "red";
+                micOff.style.display = "none"; // 隐藏未录音图标
+                micOn.style.display = "block"; // 显示录音图标
                 isRecording = true;
-                button.innerText = "停";
-                // document.getElementById('result').innerText = "录音中...";
             } catch (error) {
                 console.error("无法访问麦克风:", error);
-                document.getElementById('result').innerText = "无法访问麦克风，请检查权限。";
+                // document.getElementById('result').innerText = "";
+                alert("无法访问麦克风，请检查权限。");
             }
         } else {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
                 isRecording = false;
-                button.innerText = "录";
-                document.getElementById('record-button').style.backgroundColor = "#007bff";
+                micOff.style.display = "block"; // 显示未录音图标
+                micOn.style.display = "none"; // 隐藏录音图标
+                // button.innerText = "录";
             }
         }
     });

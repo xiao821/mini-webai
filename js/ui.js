@@ -23,6 +23,8 @@ export function initializeElements(elements) {
     elements.welcomeMessageContainer = document.getElementById('welcome-message-container');
     elements.modeButtons = document.querySelectorAll('.mode-button');
     elements.recordButton = document.getElementById('record-button');
+    elements.feedbackType = document.querySelector('input[name="feedback-type"]:checked');
+    elements.feedbackDetail = document.getElementById('feedback-detail').value;
 }
 
 // 调整文本输入框高度

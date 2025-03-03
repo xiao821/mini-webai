@@ -33,6 +33,20 @@ export function appendMessage(role, content, messageId = null) {
             </div>
             <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl">
                 <div class="markdown-content"></div>
+                ${!isUser && role !== 'system' ? `
+                    <div class="flex items-center mt-2 space-x-2 text-gray-400">
+                        <button class="feedback-btn like-btn hover:text-green-500 p-1 rounded" data-message-id="${messageId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                            </svg>
+                        </button>
+                        <button class="feedback-btn dislike-btn hover:text-red-500 p-1 rounded" data-message-id="${messageId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                            </svg>
+                        </button>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -78,16 +92,20 @@ export function updateMessageContent(messageId, content) {
 export async function sendMessage(message, currentConversationId, currentMode, isWaitingForResponse) {
     if (isWaitingForResponse) return false;
 
-    // 添加用户消息到UI
-    appendMessage('user', message);
-
     // 获取当前会话
-    const currentConversation = getConversationById(currentConversationId);
+    const currentConversation = await getConversationById(currentConversationId);
+
+    // 为用户消息创建ID
+    const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // 添加用户消息到UI
+    appendMessage('user', message, userMessageId);
 
     // 添加用户消息到会话
     currentConversation.messages.push({
         role: 'user',
-        content: message
+        content: message,
+        id: userMessageId
     });
 
     // 更新对话标题（如果是第一条用户消息） TODO 后面从后端获取
@@ -118,20 +136,15 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
 
-            // 为新消息创建ID
-            const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-            // 创建消息容器，但先不添加内容
-            const messageElement = createEmptyAssistantMessage(messageId);
-            elements.chatContainer.appendChild(messageElement);
-
-            // 获取消息内容容器，用于添加流式内容
-            const contentElement = messageElement.querySelector('.markdown-content');
+            // 为AI回复创建ID
+            const aiMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            let messageElement = null;
+            let contentElement = null;
 
             let fullContent = "";
             let accumulatedContent = "";
             let think_status = 0;
-            let firstCharacterRendered = false; // 用于标记第一个字符是否已渲染
+            let firstCharacterRendered = false;
 
             // 通过reader.read()处理流式响应
             while (true) {
@@ -176,14 +189,16 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                                         continue;
                                     }
 
+                                    // 在收到第一个有效内容时创建消息元素
+                                    if (!messageElement) {
+                                        removeTypingIndicator();
+                                        messageElement = createEmptyAssistantMessage(aiMessageId);
+                                        elements.chatContainer.appendChild(messageElement);
+                                        contentElement = messageElement.querySelector('.markdown-content');
+                                    }
+
                                     fullContent += content;
                                     accumulatedContent += content;
-
-                                    // 检查是否是第一个字符
-                                    if (!firstCharacterRendered && fullContent.length > 0) {
-                                        removeTypingIndicator(); // 在第一个字符渲染时移除指示器
-                                        firstCharacterRendered = true; // 标记第一个字符已渲染
-                                    }
 
                                     // 积累一定量的内容后再更新UI，以提高性能
                                     if (accumulatedContent.length > 10 || content.includes("\n")) {
@@ -202,7 +217,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             }
 
             // 确保最后的内容被渲染
-            if (accumulatedContent.length > 0) {
+            if (accumulatedContent.length > 0 && contentElement) {
                 renderMarkdown(contentElement, fullContent);
                 elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
             }
@@ -211,7 +226,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             currentConversation.messages.push({
                 role: 'assistant',
                 content: fullContent,
-                id: messageId
+                id: aiMessageId
             });
 
             // 更新会话

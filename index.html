@@ -6,9 +6,9 @@
     <title>智能助手</title>
      <script src="https://cdn.tailwindcss.com"></script>
 
-     <script src="./js/marked.min.js"></script>
-     <script src="./js/purify.min.js"></script>
-     <script src="./js/sweetalert2.js"></script>
+     <script src="./external_js/marked.min.js"></script>
+     <script src="./external_js/purify.min.js"></script>
+     <script src="./external_js/sweetalert2.js"></script>
 
     <link rel="stylesheet" href="./css/index.css">
 </head>
@@ -145,19 +145,19 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">反馈类型</label>
                         <div class="space-y-2">
                             <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="incorrect" class="feedback-radio">
+                                <input type="radio" name="feedback-type" value="信息不准确" class="feedback-radio">
                                 <span class="ml-2 text-sm text-gray-700">信息不准确</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="incomplete" class="feedback-radio">
+                                <input type="radio" name="feedback-type" value="信息不完整" class="feedback-radio">
                                 <span class="ml-2 text-sm text-gray-700">信息不完整</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="irrelevant" class="feedback-radio">
+                                <input type="radio" name="feedback-type" value="回答不相关" class="feedback-radio">
                                 <span class="ml-2 text-sm text-gray-700">回答不相关</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="other" class="feedback-radio">
+                                <input type="radio" name="feedback-type" value="其他问题" class="feedback-radio">
                                 <span class="ml-2 text-sm text-gray-700">其他问题</span>
                             </label>
                         </div>
@@ -190,9 +190,18 @@
                 </form>
             </div>
         </div>
+        <!-- 侧边弹框 -->
+        <div id="theme-sidebar" class="sidebar hidden">
+            <div class="sidebar-content">
+                <span class="close-button">&times;</span>
+                <h2>待开发</h2>
+                <!-- <button id="day-mode">白天模式</button>
+                <button id="night-mode">夜晚模式</button> -->
+            </div>
+        </div>
     </main>
 
-    <script src="./js/axios.min.js"></script>
+    <script src="./external_js/axios.min.js"></script>
     <script type="module" src="js/index.js"></script>
 </body>
 </html>

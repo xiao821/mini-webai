@@ -119,25 +119,58 @@ function setupEventListeners() {
     elements.questionButton.addEventListener('click', function () {
         // 使用 SweetAlert2 显示暂未开发，敬请期待
         Swal.fire({
-            icon: 'info',
-            title: '暂未开发',
-            text: '敬请期待',
+            icon: 'success',
+            title: '版本信息',
+            text: 'V0.0.1',
             showConfirmButton: false,
-            timer: 1000
+            timer: 2000
         });
     });
 
     // 右上角的设置按钮
-    elements.settingButton.addEventListener('click', function () {
-        // 使用 SweetAlert2 显示暂未开发，敬请期待
-        Swal.fire({
-            icon: 'info',
-            title: '暂未开发',
-            text: '敬请期待',
-            showConfirmButton: false,
-            timer: 1000,
-        });
+    // elements.settingButton.addEventListener('click', function () {
+    //     // 使用 SweetAlert2 显示暂未开发，敬请期待
+    //     Swal.fire({
+    //         icon: 'info',
+    //         title: '暂未开发',
+    //         text: '敬请期待',
+    //         showConfirmButton: false,
+    //         timer: 1000,
+    //     });
+    // });
+     // 右上角的设置按钮
+     elements.settingButton.addEventListener('click', function () {
+        console.log('设置按钮被点击');
+        const sidebar = document.getElementById('theme-sidebar');
+        // console.log('sidebar', sidebar);
+        sidebar.classList.remove('hidden');
+        sidebar.classList.toggle('show'); // 切换弹框显示
     });
+
+    // 关闭弹框
+    const closeButton = document.querySelector('.close-button');
+    closeButton.addEventListener('click', function () {
+        const sidebar = document.getElementById('theme-sidebar');
+        sidebar.classList.remove('show'); // 隐藏弹框
+    });
+
+    // // 切换到白天模式
+    // const dayModeButton = document.getElementById('day-mode');
+    // dayModeButton.addEventListener('click', function () {
+    //     document.body.classList.remove('night-mode'); // 移除夜晚模式
+    //     document.body.classList.add('day-mode'); // 添加白天模式
+    //     const sidebar = document.getElementById('theme-sidebar');
+    //     sidebar.classList.remove('show'); // 隐藏弹框
+    // });
+
+    // // 切换到夜晚模式
+    // const nightModeButton = document.getElementById('night-mode');
+    // nightModeButton.addEventListener('click', function () {
+    //     document.body.classList.remove('day-mode'); // 移除白天模式
+    //     document.body.classList.add('night-mode'); // 添加夜晚模式
+    //     const sidebar = document.getElementById('theme-sidebar');
+    //     sidebar.classList.remove('show'); // 隐藏弹框
+    // });
 
     // 文件上传按钮
     elements.uploadButton.addEventListener('click', function () {

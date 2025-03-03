@@ -1,5 +1,6 @@
 body {
     font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.3s, color 0.3s; /* 添加过渡效果 */
 }
 
 .conversation-item {
@@ -150,6 +151,7 @@ body {
     border-radius: 0.25rem;
     overflow-x: auto;
     margin: 1rem 0;
+    white-space: pre-wrap;
 }
 
 .record-button {
@@ -184,4 +186,86 @@ textarea {
 .record-button.recording {
     background-color: red; /* 录音时的背景色 */
     transform: scale(1.1); /* 录音时的放大效果 */
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -30%; /* 初始位置在屏幕外 */
+    width: 30%;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+    transition: right 0.3s ease; /* 添加过渡效果 */
+    z-index: 1000;
+}
+
+.sidebar-content {
+    padding: 20px;
+}
+
+.sidebar.show {
+    right: 0; /* 显示时位置 */
+}
+
+.close-button {
+    cursor: pointer;
+    float: right;
+    font-size: 20px;
+}
+
+.day-mode {
+    background-color: white;
+    color: black;
+}
+
+.night-mode {
+    background-color: black;
+    color: white;
+}
+
+/* 添加到你的CSS文件中 */
+.thinking-block {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.thinking-header {
+    background-color: #f5f5f5;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+.thinking-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+    overflow: auto;
+    transition: max-height 0.3s ease;
+}
+
+.thinking-block.expanded .thinking-content {
+    display: block;
+    max-height: 1000px; /* 足够展示内容的高度 */
+}
+
+.thinking-block.collapsed .thinking-content {
+    display: none;
+    max-height: 0;
+}
+
+.toggle-icon {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+/* 当鼠标悬停在思考块标题上时的样式 */
+.thinking-header:hover {
+    background-color: #e9e9e9;
 }

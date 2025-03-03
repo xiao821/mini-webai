@@ -131,6 +131,41 @@ export function record_voice(audioBlob) {
     });
 }
 
+// post点踩进行反馈
+export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail) {
+
+    try {
+        // 准备请求数据
+        const requestData = {
+            model: currentMessageRAG,
+            messages: MessageHistory,
+            chat_id: messageContent,
+            department: type,
+            kb_category: detail
+        };
+
+        // 发送请求
+        const response = await fetch(`${API_BASE_URL}v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': API_AUTH_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API 请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        return response;
+    } catch (error) {
+        console.error('发送聊天请求失败:', error);
+        throw error;
+    }
+}
+
 // // 获取录音文件
 // export function getAudioFile(text) {
 //     const response = axios.post(`${BASE_URL}/api/tts`, { tts_text: text }, { responseType: 'blob' })

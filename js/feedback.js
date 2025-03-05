@@ -6,6 +6,7 @@ let feedbackMessageId = null;
 let currentConversation = null;
 let messageContent = null;
 let kb_reference = null;
+let re_kb_reference = null;
 
 // 处理反馈点击
 export async function handleFeedback(messageId, type) {
@@ -15,8 +16,16 @@ export async function handleFeedback(messageId, type) {
     
     // 从会话历史中获取消息内容
     messageContent = currentConversation.messages.find(msg => msg.id === messageId)?.content;
-    kb_reference = currentConversation.messages.find(msg => msg.id === messageId)?.knowledge_data;
-    // console.log('kb_reference', kb_reference);
+    let kb_reference = currentConversation.messages.find(msg => msg.id === messageId)?.knowledge_data;
+    
+    // 检查 kb_reference 是否是字符串，并尝试解析为数组
+    if (typeof kb_reference === 'string') {
+      try {
+        re_kb_reference = JSON.parse(kb_reference); // 将字符串解析为数组
+      } catch (error) {
+        console.error('Failed to parse kb_reference:', error);
+      }
+    }
     
     if (type === 'like') {
         // 简单处理点赞
@@ -62,7 +71,7 @@ export async function submitFeedback() {
         }));
         // 等待 API 调用完成
         await dislikefeedback(
-            kb_reference, 
+            re_kb_reference, 
             simplifiedMessages, 
             messageContent, 
             feedbackType, 

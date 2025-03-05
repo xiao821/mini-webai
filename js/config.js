@@ -20,7 +20,7 @@ export const modeConfig = {
         icon: '🏥',
         title: '医保咨询',
         welcomeMessage: '👋 您好！我是您的**医疗智能助手**，可以为您解答您想要问的问题。\n\n您可以咨询以下内容：\n\n- 医保政策解读\n- 医疗费用报销流程\n- 医保卡使用问题\n- 定点医院和药店查询\n- 其他医保相关问题',
-        department: '医疗',
+        department: '医保',
         kb_category: ''
     }
 };

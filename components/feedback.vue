@@ -88,16 +88,16 @@
                 v-loading="loading"
                 border>
                 <el-table-column prop="date" label="日期" width="180" sortable></el-table-column>
-                <el-table-column prop="category" label="类型" width="120">
+                <el-table-column prop="feedback_type" label="类型" width="120">
                     <template #default="scope">
                         <el-tag 
-                            :type="getCategoryTag(scope.row.category)"
+                            :type="getCategoryTag(scope.row.feedback_type)"
                             size="small">
-                            {{ scope.row.category }}
+                            {{ scope.row.feedback_type }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="content" label="反馈内容" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="detail" label="反馈内容" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="scope">
                         <el-tag 
@@ -127,6 +127,13 @@
                             @click="handleStatus(scope.row)"
                             :class="{ 'danger-text': scope.row.status === '待处理' }">
                             {{ scope.row.status === '待处理' ? '标记已处理' : '标记待处理' }}
+                        </el-button>
+                        <el-button 
+                            style="color: #F77F6C;"
+                            type="text" 
+                            size="small" 
+                            @click="deletefeedback(scope.row)">
+                            删除反馈
                         </el-button>
                     </template>
                 </el-table-column>
@@ -159,13 +166,13 @@
                 </div>
                 <div class="detail-item">
                     <label>反馈分类：</label>
-                    <el-tag size="small" :type="getCategoryTag(currentFeedback.category)">
-                        {{ currentFeedback.category }}
+                    <el-tag size="small" :type="getCategoryTag(currentFeedback.feedback_type)">
+                        {{ currentFeedback.feedback_type }}
                     </el-tag>
                 </div>
                 <div class="detail-item">
                     <label>反馈内容：</label>
-                    <div class="detail-content">{{ currentFeedback.content }}</div>
+                    <div class="detail-content">{{ currentFeedback.detail }}</div>
                 </div>
                 <div class="detail-item">
                     <label>处理状态：</label>
@@ -178,9 +185,10 @@
     </div>
 </template>
 
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script>
-const api = require('../js/api.js');
+<script type="module">
+const baseUrl = 'https://lgdev.baicc.cc/';
+const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
+
 module.exports = {
     name: 'Feedback',
     data() {
@@ -199,19 +207,7 @@ module.exports = {
                 pending: 24
             },
             // 表格数据
-            tableData: [{
-                date: '2024-03-15',
-                category: '信息不准确',
-                content: '关于产品使用说明的部分信息需要更新',
-                status: '待处理',
-                knowledgeId: '1-1'
-            }, {
-                date: '2024-03-14',
-                category: '信息不完整',
-                content: '缺少具体的操作步骤说明',
-                status: '已处理',
-                knowledgeId: '2-1'
-            }],
+            tableData: [],
             // 分页
             currentPage: 1,
             pageSize: 10,
@@ -224,6 +220,22 @@ module.exports = {
         }
     },
     methods: {
+        // 获取表格数据
+        async getFeedbackTableData() {
+            this.loading = true;
+            try {
+                const response = await axios.get(`${baseUrl}/api/feedback`,{
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN
+                    }
+                });
+                this.tableData = response.data.feedback_list; // 将反馈列表赋值给表格数据
+                this.loading = false;
+                console.log('获取表格数据成功:', this.tableData); // 可以在控制台查看后端返回的数据
+            } catch (error) {
+                console.error('获取表格数据失败:', error);
+            }
+        },
         // 处理对话框关闭
         handleDialogClose() {
             this.dialogVisible = false;
@@ -232,7 +244,7 @@ module.exports = {
         // 筛选处理
         handleFilter() {
             this.currentPage = 1;
-            this.loadData();
+            this.getFeedbackTableData();
         },
         // 重置筛选
         resetFilter() {
@@ -241,32 +253,47 @@ module.exports = {
                 category: '',
                 dateRange: []
             };
-            this.handleFilter();
+            this.getFeedbackTableData();
         },
         // 分页处理
         handleSizeChange(val) {
             this.pageSize = val;
-            this.loadData();
+            this.getFeedbackTableData();
         },
         handleCurrentChange(val) {
             this.currentPage = val;
-            this.loadData();
+            this.getFeedbackTableData();
         },
         // 查看详情
         viewDetail(row) {
-            console.log('查看详情被点击');
-            console.log('当前行数据:', row);
-            console.log('对话框状态改变前:', this.dialogVisible);
             this.currentFeedback = row;
             this.dialogVisible = true;
-            console.log('对话框状态改变后:', this.dialogVisible);
-            console.log('当前反馈数据:', this.currentFeedback);
+            console.log('row',row)
         },
         // 查看知识库
         viewKnowledge(row) {
             this.$router.push({
                 path: '/knowledge',
                 query: { id: row.knowledgeId }
+            });
+        },
+        // 删除单条反馈
+        deletefeedback(row) {
+            console.log('row',row)
+            this.$confirm('确认删除该反馈吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(async () => {
+                await axios.delete(`${baseUrl}/api/feedback/${row.md_id}`, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN
+                    }
+                });
+                this.$message.success('删除成功');
+                this.getFeedbackTableData();
+            }).catch(() => {
+                this.$message.info('已取消删除');
             });
         },
         // 处理状态变更
@@ -317,50 +344,9 @@ module.exports = {
                 this.loading = false;
             }, 500);
         },
-        // 获取表格数据
-        getFeedbackTableData() {
-            try {
-                const response = api.fetchChatList();
-
-                console.log('获取表格数据成功:', response.data); // 可以在控制台查看后端返回的数据
-
-                // 可选：根据后端返回的状态码或数据进行更细致的成功处理
-                if (response.status === 200 || response.status === 201) {
-                // 处理成功逻辑，例如显示更友好的提示，跳转页面等
-                } else {
-                this.feedbackMessage = '获取表格数据成功，但服务器返回异常状态，请稍后重试。';
-                }
-
-            } catch (error) {
-                console.error('获取表格数据失败:', error);
-                this.feedbackMessage = '获取表格数据失败，请检查网络或稍后重试。';
-
-                // 可选：根据 error 对象进行更详细的错误处理
-                if (error.response) {
-                // 请求已发出，但服务器响应的状态码不在 2xx 范围内
-                console.error('服务器错误:', error.response.status, error.response.data);
-                // 可以根据 error.response.status 来显示不同的错误信息
-                if (error.response.status === 400) {
-                    this.feedbackMessage = '获取表格数据失败，请求参数有误。'; // 例如
-                } else if (error.response.status === 500) {
-                    this.feedbackMessage = '服务器内部错误，请稍后重试。'; // 例如
-                } else {
-                    this.feedbackMessage = `获取表格数据，服务器返回错误：${error.response.status}`;
-                }
-                } else if (error.request) {
-                // 请求已发出，但没有收到任何响应
-                console.error('没有收到服务器响应:', error.request);
-                this.feedbackMessage = '无法连接到服务器，请检查网络连接。';
-                } else {
-                // 在设置请求时发生了一些事情，触发了一个错误
-                console.error('请求设置错误:', error.message);
-                this.feedbackMessage = '客户端请求错误，请稍后重试。';
-                }
-      }
-    },
     },
     mounted() {
-        this.loadData();
+        // this.loadData();
         this.getFeedbackTableData();
     }
 }

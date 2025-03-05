@@ -9,6 +9,16 @@
         <!-- 顶部筛选区 -->
         <div class="feedback-header">
             <el-form :inline="true" :model="filterForm" class="filter-form" size="small">
+                <el-form-item label="日期范围">
+                    <el-date-picker
+                        v-model="filterForm.dateRange"
+                        type="daterange"
+                        range-separator="至"
+                        start-placeholder="开始日期"
+                        end-placeholder="结束日期"
+                        value-format="yyyy-MM-dd">
+                    </el-date-picker>
+                </el-form-item>
                 <el-form-item label="关键词">
                     <el-input 
                         v-model="filterForm.keyword" 
@@ -25,15 +35,11 @@
                         <el-option label="其他问题" value="其他问题"></el-option>
                     </el-select>
                 </el-form-item>
-                <el-form-item label="日期范围">
-                    <el-date-picker
-                        v-model="filterForm.dateRange"
-                        type="daterange"
-                        range-separator="至"
-                        start-placeholder="开始日期"
-                        end-placeholder="结束日期"
-                        value-format="yyyy-MM-dd">
-                    </el-date-picker>
+                <el-form-item label="处理状态">
+                    <el-select v-model="filterForm.status" placeholder="未筛选" clearable>
+                        <el-option label="已处理" value="已处理"></el-option>
+                        <el-option label="未处理" value="待处理"></el-option>
+                    </el-select>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" @click="handleFilter">筛选</el-button>
@@ -107,33 +113,34 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <!-- 操作内容 -->
                 <el-table-column label="操作" width="200" fixed="right">
                     <template #default="scope">
                         <el-button 
                             type="text" 
                             size="small" 
                             @click="viewDetail(scope.row)">
-                            查看详情
+                            详情
                         </el-button>
                         <el-button 
                             type="text" 
                             size="small" 
                             @click="viewKnowledge(scope.row)">
-                            查看知识库
+                            知识库
                         </el-button>
                         <el-button 
                             type="text" 
                             size="small" 
                             @click="handleStatus(scope.row)"
                             :class="{ 'danger-text': scope.row.status === '待处理' }">
-                            {{ scope.row.status === '待处理' ? '标记已处理' : '标记待处理' }}
+                            {{ scope.row.status === '待处理' ? '已处理' : '待处理' }}
                         </el-button>
                         <el-button 
                             style="color: #F77F6C;"
                             type="text" 
                             size="small" 
                             @click="deletefeedback(scope.row)">
-                            删除反馈
+                            删除
                         </el-button>
                     </template>
                 </el-table-column>
@@ -197,7 +204,8 @@ module.exports = {
             filterForm: {
                 keyword: '',
                 category: '',
-                dateRange: []
+                dateRange: [],
+                status: ''
             },
             // 统计数据
             stats: {
@@ -216,6 +224,7 @@ module.exports = {
             loading: false,
             // 详情弹窗
             dialogVisible: false,
+            // 当前反馈状态
             currentFeedback: null
         }
     },
@@ -231,7 +240,6 @@ module.exports = {
                 });
                 this.tableData = response.data.feedback_list; // 将反馈列表赋值给表格数据
                 this.loading = false;
-                console.log('获取表格数据成功:', this.tableData); // 可以在控制台查看后端返回的数据
             } catch (error) {
                 console.error('获取表格数据失败:', error);
             }
@@ -251,15 +259,17 @@ module.exports = {
             this.filterForm = {
                 keyword: '',
                 category: '',
-                dateRange: []
+                dateRange: [],
+                status: ''
             };
             this.getFeedbackTableData();
         },
-        // 分页处理
+        // 分页处理-每页条数
         handleSizeChange(val) {
             this.pageSize = val;
             this.getFeedbackTableData();
         },
+        // 分页处理-当前页
         handleCurrentChange(val) {
             this.currentPage = val;
             this.getFeedbackTableData();
@@ -306,6 +316,7 @@ module.exports = {
             }).then(() => {
                 row.status = newStatus;
                 this.$message.success('状态更新成功');
+                this.getFeedbackTableData();
             }).catch(() => {});
         },
         // 获取分类标签类型
@@ -322,31 +333,8 @@ module.exports = {
         getStatusTag(status) {
             return status === '待处理' ? 'danger' : 'success';
         },
-        // 加载数据
-        loadData() {
-            this.loading = true;
-            // 模拟异步加载数据
-            setTimeout(() => {
-                this.tableData = [{
-                    date: '2024-03-04',
-                    category: '回答不相关',
-                    content: '建议添加批量处理功能',
-                    status: '待处理',
-                    knowledgeId: '1'
-                }, {
-                    date: '2024-03-03',
-                    category: '信息不准确',
-                    content: '系统在特定情况下会出现卡顿',
-                    status: '已处理',
-                    knowledgeId: '2'
-                }];
-                this.total = 2;
-                this.loading = false;
-            }, 500);
-        },
     },
     mounted() {
-        // this.loadData();
         this.getFeedbackTableData();
     }
 }

@@ -178,7 +178,9 @@
     </div>
 </template>
 
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
+const api = require('../js/api.js');
 module.exports = {
     name: 'Feedback',
     data() {
@@ -314,10 +316,52 @@ module.exports = {
                 this.total = 2;
                 this.loading = false;
             }, 500);
-        }
+        },
+        // 获取表格数据
+        getFeedbackTableData() {
+            try {
+                const response = api.fetchChatList();
+
+                console.log('获取表格数据成功:', response.data); // 可以在控制台查看后端返回的数据
+
+                // 可选：根据后端返回的状态码或数据进行更细致的成功处理
+                if (response.status === 200 || response.status === 201) {
+                // 处理成功逻辑，例如显示更友好的提示，跳转页面等
+                } else {
+                this.feedbackMessage = '获取表格数据成功，但服务器返回异常状态，请稍后重试。';
+                }
+
+            } catch (error) {
+                console.error('获取表格数据失败:', error);
+                this.feedbackMessage = '获取表格数据失败，请检查网络或稍后重试。';
+
+                // 可选：根据 error 对象进行更详细的错误处理
+                if (error.response) {
+                // 请求已发出，但服务器响应的状态码不在 2xx 范围内
+                console.error('服务器错误:', error.response.status, error.response.data);
+                // 可以根据 error.response.status 来显示不同的错误信息
+                if (error.response.status === 400) {
+                    this.feedbackMessage = '获取表格数据失败，请求参数有误。'; // 例如
+                } else if (error.response.status === 500) {
+                    this.feedbackMessage = '服务器内部错误，请稍后重试。'; // 例如
+                } else {
+                    this.feedbackMessage = `获取表格数据，服务器返回错误：${error.response.status}`;
+                }
+                } else if (error.request) {
+                // 请求已发出，但没有收到任何响应
+                console.error('没有收到服务器响应:', error.request);
+                this.feedbackMessage = '无法连接到服务器，请检查网络连接。';
+                } else {
+                // 在设置请求时发生了一些事情，触发了一个错误
+                console.error('请求设置错误:', error.message);
+                this.feedbackMessage = '客户端请求错误，请稍后重试。';
+                }
+      }
+    },
     },
     mounted() {
         this.loadData();
+        this.getFeedbackTableData();
     }
 }
 </script>

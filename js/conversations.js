@@ -286,7 +286,7 @@ export async function initializeConversations() {
             conversations.push({
                 id: newChatId,
                 title: '新对话',
-                mode: 'dataresource',
+                mode: 'default',
                 messages: []
             });
             currentConversationId = newChatId;
@@ -306,7 +306,7 @@ export async function initializeConversations() {
         conversations = [{
             id: newChatId,
             title: '新对话',
-            mode: 'dataresource',
+            mode: 'default',
             messages: []
         }];
         currentConversationId = newChatId;

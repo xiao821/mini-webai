@@ -125,10 +125,23 @@ export async function sendMessage(message, currentConversationId, currentMode, i
     appendTypingIndicator();
 
     try {
+        // 处理消息历史，只保留content和role字段
+        const simplifiedMessages = currentConversation.messages.map(msg => ({
+            content: msg.content,
+            role: msg.role
+        }));
+        // 处理 assistant 的 content
+        const updatedMessages = simplifiedMessages.map(msg => {
+            if (msg.role === 'assistant') {
+                // 替换第一个 ``` 为 <a>，第二个 ``` 为 </a>
+                msg.content = msg.content.replace(/```/, '<think>').replace(/```/, '</think>');
+            }
+            return msg;
+        });
         // 调用API获取响应
         const response = await sendChatCompletion(
             currentConversationId,
-            currentConversation.messages.slice(-10),
+            updatedMessages,
             currentMode
         );
 
@@ -145,6 +158,8 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             let accumulatedContent = "";
             let think_status = 0;
             let firstCharacterRendered = false;
+            let currentEvent = null;
+            let knowledgeData = null;
 
             // 通过reader.read()处理流式响应
             while (true) {
@@ -160,15 +175,22 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                 // 处理包含"data:"前缀的流式数据
                 const lines = chunk.split("\n");
                 for (const line of lines) {
+                    if (line.startsWith("event:")) {
+                        currentEvent = line.substring(6).trim();
+                        continue;
+                    }
                     if (line.startsWith("data:")) {
-                        // 提取JSON数据部分
+                        const jsonStr = line.substring(5).trim();
+                        if (!jsonStr) continue;
+                        if (jsonStr.includes("DONE")) continue;
+
+                        // 处理knowledge事件数据
+                        if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
+                            knowledgeData = jsonStr;  // 直接存储原始数据
+                            continue;
+                        }
+
                         try {
-                            const jsonStr = line.substring(5).trim();
-                            if (!jsonStr) continue;
-                            // data: [DONE] 的处理
-                            if (jsonStr.includes("DONE")) {
-                                continue;
-                            }
                             const data = JSON.parse(jsonStr);
 
                             // 从流中提取内容
@@ -223,14 +245,22 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             }
 
             // 记录消息到对话历史
-            currentConversation.messages.push({
+            const newMessage = {
                 role: 'assistant',
                 content: fullContent,
                 id: aiMessageId
-            });
+            };
+
+            // 如果有knowledge数据，添加到消息中
+            if (knowledgeData) {
+                newMessage.knowledge_data = knowledgeData;
+            }
+
+            currentConversation.messages.push(newMessage);
 
             // 更新会话
             updateConversation(currentConversation);
+            console.log('currentConversation', currentConversation);
 
             return true;
         } else {

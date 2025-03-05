@@ -75,8 +75,8 @@ export async function sendChatCompletion(currentConversationId, messages, curren
             temperature: 0.6,
             stream: true,
             chat_id: currentConversationId,
-            department: modeConfig[currentMode]?.department,
-            kb_category: modeConfig[currentMode]?.kb_category
+            // department: modeConfig[currentMode]?.department,
+            // kb_category: modeConfig[currentMode]?.kb_category
         };
 
         // 发送请求
@@ -137,15 +137,15 @@ export async function dislikefeedback(currentMessageRAG, MessageHistory, message
     try {
         // 准备请求数据
         const requestData = {
-            model: currentMessageRAG,
-            messages: MessageHistory,
-            chat_id: messageContent,
-            department: type,
-            kb_category: detail
+            kb_reference: currentMessageRAG, // 参考知识点
+            conversation_messages: MessageHistory, // 对话历史
+            current_message: messageContent, // 当前消息
+            feedback_type: type, // 反馈类型
+            detail: detail // 反馈详情
         };
 
         // 发送请求
-        const response = await fetch(`${API_BASE_URL}v1/chat/completions`, {
+        const response = await fetch(`${API_BASE_URL}/api/feedback`, {
             method: 'POST',
             headers: {
                 'Authorization': API_AUTH_TOKEN,

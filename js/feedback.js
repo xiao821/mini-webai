@@ -5,6 +5,7 @@ import { dislikefeedback } from './api.js';
 let feedbackMessageId = null;
 let currentConversation = null;
 let messageContent = null;
+let kb_reference = null;
 
 // 处理反馈点击
 export async function handleFeedback(messageId, type) {
@@ -14,6 +15,8 @@ export async function handleFeedback(messageId, type) {
     
     // 从会话历史中获取消息内容
     messageContent = currentConversation.messages.find(msg => msg.id === messageId)?.content;
+    kb_reference = currentConversation.messages.find(msg => msg.id === messageId)?.knowledge_data;
+    // console.log('kb_reference', kb_reference);
     
     if (type === 'like') {
         // 简单处理点赞
@@ -52,10 +55,15 @@ export async function submitFeedback() {
     }
 
     try {
+        // 处理消息历史，只保留content和role字段
+        const simplifiedMessages = currentConversation.messages.map(msg => ({
+            content: msg.content,
+            role: msg.role
+        }));
         // 等待 API 调用完成
         await dislikefeedback(
-            feedbackMessageId, 
-            currentConversation.messages, 
+            kb_reference, 
+            simplifiedMessages, 
             messageContent, 
             feedbackType, 
             feedbackDetail

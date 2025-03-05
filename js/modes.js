@@ -3,7 +3,7 @@ import { modeConfig } from './config.js';
 import { startNewConversation, getConversationById, getCurrentConversationId } from './conversations.js';
 import { appendMessage } from './messaging.js';
 // 当前选中的模式
-let currentMode = 'dataresource';
+let currentMode = 'default';
 
 // 获取当前模式
 export function getCurrentMode() {

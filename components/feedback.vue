@@ -92,14 +92,26 @@
                 :data="tableData" 
                 style="width: 100%"
                 v-loading="loading"
-                border>
-                <el-table-column type="expand">
+                border
+                ref="feedbackTable"
+                row-key="md_id">
+                <el-table-column 
+                    type="expand" 
+                    width="0" 
+                    class-name="hidden-expand-column">
                     <template #default="props">
                         <el-table
                             :data="props.row.kb_reference"
-                            style="width: 100%">
-                            <el-table-column prop="title" label="知识库标题"></el-table-column>
-                            <el-table-column prop="content" label="知识库内容" show-overflow-tooltip></el-table-column>
+                            style="width: 100%"
+                            row-key="kb_id">
+                            <el-table-column prop="kb_id" label="知识点ID" width="100"></el-table-column>
+                            <el-table-column prop="kb_title" label="知识库标题"></el-table-column>
+                            <el-table-column prop="kb_content" label="知识库内容" show-overflow-tooltip></el-table-column>
+                            <el-table-column prop="kb_simil" label="相似度" width="100">
+                                <template #default="scope">
+                                    {{ scope.row.kb_simil}}%
+                                </template>
+                            </el-table-column>
                         </el-table>
                     </template>
                 </el-table-column>
@@ -121,7 +133,6 @@
                             <template v-slot:content>
                                 <div v-html="renderMarkdown(scope.row.ai_answer)" class="markdown-tooltip"></div>
                             </template>
-                            <!-- <i class="el-icon-info tooltip-icon"></i> -->
                         </el-tooltip>
                     </template>
                 </el-table-column>
@@ -135,7 +146,17 @@
                         </el-tag>
                     </template>
                 </el-table-column>
-                <!-- 操作内容 -->
+                <el-table-column prop="kb_reference" label="知识点ID" width="120">
+                    <template #default="scope">
+                        <span 
+                            class="clickable-text"
+                            @click="$refs.feedbackTable.toggleRowExpansion(scope.row)">
+                            {{ scope.row.kb_reference && scope.row.kb_reference.length > 0 
+                                ? scope.row.kb_reference.map(item => item.kb_id).join(', ') 
+                                : '无' }}
+                        </span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="操作" width="200" fixed="right">
                     <template #default="scope">
                         <el-button 
@@ -370,7 +391,9 @@ module.exports = {
             // 当前操作的反馈项
             currentFeedbackForKnowledge: null,
             // 当前预览节点
-            currentPreviewNode: null
+            currentPreviewNode: null,
+            // 展开的行
+            expandedRows: []
         }
     },
     watch: {
@@ -387,10 +410,15 @@ module.exports = {
                 const response = await axios.get(`${baseUrl}/api/feedback`,{
                     headers: {
                         'Authorization': API_AUTH_TOKEN
-                    }
+                    },
+                    // Parameters: {
+                    //     pagesize: this.pageSize,
+                    //     pagenum: this.currentPage
+                    // }
                 });
                 
                 console.log('response',response.data.feedback_list)
+                // this.total = response.data.total
                 // 处理数据，获取用户问题和AI回答
                 this.tableData = response.data.feedback_list.map(feedback => {
                     const aiAnswerIndex = feedback.current_message || [];
@@ -839,6 +867,15 @@ module.exports = {
                 console.error('Markdown渲染失败:', error);
                 return content;
             }
+        },
+        // 处理行展开
+        handleRowExpand(row) {
+        console.log('row',row)
+            if (this.expandedRows.includes(row.md_id)) {
+                this.expandedRows = this.expandedRows.filter(id => id !== row.md_id);
+            } else {
+                this.expandedRows.push(row.md_id);
+            }
         }
     },
     mounted() {
@@ -987,10 +1024,19 @@ module.exports = {
 }
 
 .table-cell-content {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.clickable-text {
+    color: #409EFF;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.clickable-text:hover {
+    color: #66b1ff;
+    text-decoration: underline;
 }
 
 /* 知识库弹窗样式 */
@@ -1144,10 +1190,5 @@ module.exports = {
     margin-left: 5px;
     color: #909399;
     cursor: pointer;
-}
-
-.table-cell-content {
-    display: inline-block;
-    vertical-align: middle;
 }
 </style>

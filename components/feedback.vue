@@ -171,13 +171,13 @@
                             @click="viewKnowledge(scope.row)">
                             知识库
                         </el-button>
-                        <el-button 
+                        <!-- <el-button 
                             type="text" 
                             size="small" 
                             @click="handleStatus(scope.row)"
                             :class="{ 'danger-text': scope.row.status === '待处理' }">
                             {{ scope.row.status === '待处理' ? '已处理' : '待处理' }}
-                        </el-button>
+                        </el-button> -->
                         <el-button 
                             style="color: #F77F6C;"
                             type="text" 
@@ -405,20 +405,25 @@ module.exports = {
     methods: {
         // 获取表格数据
         async getFeedbackTableData() {
+            console.log('this.currentPage',this.currentPage,this.pageSize)
             this.loading = true;
             try {
-                const response = await axios.get(`${baseUrl}/api/feedback`,{
+                const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
                     headers: {
                         'Authorization': API_AUTH_TOKEN
                     },
-                    // Parameters: {
-                    //     pagesize: this.pageSize,
-                    //     pagenum: this.currentPage
-                    // }
+                    params: {
+                        pagenum: this.currentPage,
+                        pagesize: this.pageSize
+                    }
                 });
                 
                 console.log('response',response.data.feedback_list)
-                // this.total = response.data.total
+                // 获取总条数
+                if (response.data.feedback_list && response.data.feedback_list.length > 0) {
+                    this.total = response.data.feedback_list[0].total;
+                }
+                
                 // 处理数据，获取用户问题和AI回答
                 this.tableData = response.data.feedback_list.map(feedback => {
                     const aiAnswerIndex = feedback.current_message || [];
@@ -446,11 +451,27 @@ module.exports = {
                         }
                     }
                     
+                    // 格式化日期
+                    const formatDate = (dateString) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        }).replace(/\//g, '-');
+                    };
+                    
                     return {
                         ...feedback,
                         user_question: userQuestion,
                         ai_answer: filteredAnswer,
-                        // kb_reference: Array.isArray(feedback.kb_reference) ? feedback.kb_reference : []
+                        status: feedback.treatment_state || '待处理', // 使用 treatment_state 作为状态，如果为空则显示"待处理"
+                        date: formatDate(feedback.created_at), // 格式化日期
                     };
                 });
                 
@@ -807,18 +828,19 @@ module.exports = {
             });
         },
         // 处理状态变更
-        handleStatus(row) {
-            const newStatus = row.status === '待处理' ? '已处理' : '待处理';
-            this.$confirm(`确认将该反馈标记为${newStatus}?`, '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-            }).then(() => {
-                row.status = newStatus;
-                this.$message.success('状态更新成功');
-                this.getFeedbackTableData();
-            }).catch(() => {});
-        },
+        // handleStatus(row) {
+        //     console.log('row',row.status)
+        //     const newStatus = row.status === '待处理' ? '已处理' : '待处理';
+        //     this.$confirm(`确认将该反馈标记为${newStatus}?`, '提示', {
+        //         confirmButtonText: '确定',
+        //         cancelButtonText: '取消',
+        //         type: 'warning'
+        //     }).then(() => {
+        //         row.status = newStatus;
+        //         this.$message.success('状态更新成功');
+        //         this.getFeedbackTableData();
+        //     }).catch(() => {});
+        // },
         // 获取分类标签类型
         getCategoryTag(category) {
             const map = {

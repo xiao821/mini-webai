@@ -72,7 +72,7 @@ export async function sendChatCompletion(currentConversationId, messages, curren
             model: currentModel,
             messages: messages,
             max_tokens: 2048,
-            temperature: 0.6,
+            temperature: 0,
             stream: true,
             chat_id: currentConversationId,
             department: modeConfig[currentMode]?.department,

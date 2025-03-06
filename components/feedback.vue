@@ -93,6 +93,16 @@
                 style="width: 100%"
                 v-loading="loading"
                 border>
+                <el-table-column type="expand">
+                    <template #default="props">
+                        <el-table
+                            :data="props.row.kb_reference"
+                            style="width: 100%">
+                            <el-table-column prop="title" label="知识库标题"></el-table-column>
+                            <el-table-column prop="content" label="知识库内容" show-overflow-tooltip></el-table-column>
+                        </el-table>
+                    </template>
+                </el-table-column>
                 <el-table-column prop="date" label="日期" width="180" sortable></el-table-column>
                 <el-table-column prop="feedback_type" label="类型" width="120">
                     <template #default="scope">
@@ -103,6 +113,8 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column prop="user_question" label="用户问题" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="ai_answer" label="AI回答" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="detail" label="反馈内容" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="scope">
@@ -238,10 +250,25 @@ module.exports = {
                         'Authorization': API_AUTH_TOKEN
                     }
                 });
-                this.tableData = response.data.feedback_list; // 将反馈列表赋值给表格数据
+                
+                // 处理数据，获取用户问题和AI回答
+                this.tableData = response.data.feedback_list.map(feedback => {
+                    const messages = feedback.conversation_messages || [];
+                    const aiAnswerIndex = messages.findIndex(msg => msg === feedback.conversation_messages);
+                    const userQuestion = aiAnswerIndex > 0 ? messages[aiAnswerIndex - 1] : '';
+                    
+                    return {
+                        ...feedback,
+                        user_question: userQuestion,
+                        ai_answer: feedback.conversation_messages,
+                        kb_reference: Array.isArray(feedback.kb_reference) ? feedback.kb_reference : []
+                    };
+                });
+                
                 this.loading = false;
             } catch (error) {
                 console.error('获取表格数据失败:', error);
+                this.loading = false;
             }
         },
         // 处理对话框关闭

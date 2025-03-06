@@ -1,0 +1,115 @@
+<!--
+ * @Author: Ray
+ * @Date: 2025-03-04
+ * @Description: 知识库管理主入口
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理</title>
+    <!-- 引入Vue -->
+    <script src="./external_js/vue.js"></script>
+    <!-- 引入Element UI -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/theme-chalk/index.css">
+    <script src="./external_js/element.js"></script>
+    <!-- 引入Vue Router -->
+    <script src="./external_js/vue-router.js"></script>
+    <!-- 引入http-vue-loader -->
+    <script src="./external_js/httpVueLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #545c64;
+            height: 100%;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <el-menu
+                    :default-active="activeIndex"
+                    class="el-menu-vertical"
+                    background-color="#545c64"
+                    text-color="#fff"
+                    active-text-color="#ffd04b"
+                    router>
+                    <el-menu-item index="/knowledge">
+                        <i class="el-icon-document"></i>
+                        <span slot="title">知识库</span>
+                    </el-menu-item>
+                    <el-menu-item index="/feedback">
+                        <i class="el-icon-message"></i>
+                        <span slot="title">反馈总结</span>
+                    </el-menu-item>
+                </el-menu>
+            </div>
+            
+            <!-- 主要内容区域 -->
+            <div class="main-content">
+                <router-view></router-view>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 路由配置
+        const routes = [
+            {
+                path: '/',
+                redirect: '/knowledge'
+            },
+            {
+                path: '/feedback',
+                component: httpVueLoader('components/feedback.vue')
+            },
+            {
+                path: '/knowledge',
+                component: httpVueLoader('components/knowledge.vue')
+            }
+        ]
+
+        const router = new VueRouter({
+            routes
+        });
+
+        // Vue实例
+        new Vue({
+            el: '#app',
+            router,
+            data: {
+                activeIndex: '/knowledge'
+            },
+            watch: {
+                // 监听路由变化
+                '$route': {
+                    handler(to) {
+                        this.activeIndex = to.path;
+                    },
+                    immediate: true
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

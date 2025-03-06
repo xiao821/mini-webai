@@ -251,17 +251,39 @@ module.exports = {
                     }
                 });
                 
+                console.log('response',response.data.feedback_list)
                 // 处理数据，获取用户问题和AI回答
                 this.tableData = response.data.feedback_list.map(feedback => {
-                    const messages = feedback.conversation_messages || [];
-                    const aiAnswerIndex = messages.findIndex(msg => msg === feedback.conversation_messages);
-                    const userQuestion = aiAnswerIndex > 0 ? messages[aiAnswerIndex - 1] : '';
+                    const aiAnswerIndex = feedback.current_message || [];
+                    
+                    // 过滤掉```之间的内容
+                    let filteredAnswer = aiAnswerIndex;
+                    if (Array.isArray(aiAnswerIndex)) {
+                        filteredAnswer = aiAnswerIndex;
+                    } else if (typeof aiAnswerIndex === 'string') {
+                        // 使用正则表达式过滤掉```之间的内容
+                        filteredAnswer = aiAnswerIndex.replace(/```[\s\S]*?```/g, '');
+                    }
+                    
+                    // 从conversation_messages找到用户的问题
+                    let userQuestion = '';
+                    if (feedback.conversation_messages && Array.isArray(feedback.conversation_messages)) {
+                        // 查找current_message在conversation_messages中的位置
+                        const messageIndex = feedback.conversation_messages.findIndex(msg => 
+                            msg.role === 'assistant' && msg.content === feedback.current_message
+                        );
+                        
+                        // 如果找到了匹配的消息，并且它前面有用户消息，则获取用户问题
+                        if (messageIndex > 0 && feedback.conversation_messages[messageIndex - 1].role === 'user') {
+                            userQuestion = feedback.conversation_messages[messageIndex - 1].content;
+                        }
+                    }
                     
                     return {
                         ...feedback,
                         user_question: userQuestion,
-                        ai_answer: feedback.conversation_messages,
-                        kb_reference: Array.isArray(feedback.kb_reference) ? feedback.kb_reference : []
+                        ai_answer: filteredAnswer,
+                        // kb_reference: Array.isArray(feedback.kb_reference) ? feedback.kb_reference : []
                     };
                 });
                 

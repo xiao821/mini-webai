@@ -71,7 +71,7 @@ export async function sendChatCompletion(currentConversationId, messages, curren
         const requestData = {
             model: currentModel,
             messages: messages,
-            max_tokens: 2048,
+            max_tokens: 10240,
             temperature: 0,
             stream: true,
             chat_id: currentConversationId,

@@ -116,8 +116,8 @@
                 <!-- 未选中节点时显示空状态 -->
                 <div v-else class="empty-state">
                     <i class="el-icon-document"></i>
-                    <p>请选择或创建一个知识库条目</p>
-                    <el-button type="primary" @click="createNewNode">创建新条目</el-button>
+                    <p>请选择查看一个知识库条目</p>
+                    <!-- <el-button type="primary" @click="createNewNode">创建新条目</el-button> -->
                 </div>
             </div>
         </div>

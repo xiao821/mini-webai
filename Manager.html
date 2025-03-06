@@ -57,13 +57,13 @@
                     text-color="#fff"
                     active-text-color="#ffd04b"
                     router>
-                    <el-menu-item index="/knowledge">
-                        <i class="el-icon-document"></i>
-                        <span slot="title">知识库</span>
-                    </el-menu-item>
                     <el-menu-item index="/feedback">
                         <i class="el-icon-message"></i>
                         <span slot="title">反馈总结</span>
+                    </el-menu-item>
+                    <el-menu-item index="/knowledge">
+                        <i class="el-icon-document"></i>
+                        <span slot="title">知识库</span>
                     </el-menu-item>
                 </el-menu>
             </div>
@@ -80,7 +80,7 @@
         const routes = [
             {
                 path: '/',
-                redirect: '/knowledge'
+                redirect: '/feedback'
             },
             {
                 path: '/feedback',

@@ -508,8 +508,17 @@ module.exports = {
                     // 确保树节点默认展开
                     this.$nextTick(() => {
                         if (this.$refs.knowledgeTree) {
-                            // 默认展开所有节点
-                            this.$refs.knowledgeTree.expandAll();
+                            // 使用 Element UI Tree 的正确方法展开节点
+                            const expandAllNodes = (data) => {
+                                data.forEach(node => {
+                                    if (node.children && node.children.length > 0) {
+                                        this.$refs.knowledgeTree.store.nodesMap[node.id].expanded = true;
+                                        expandAllNodes(node.children);
+                                    }
+                                });
+                            };
+                            
+                            expandAllNodes(this.knowledgeTree);
                         }
                     });
                 }
@@ -714,14 +723,14 @@ module.exports = {
             }
             
             try {
-                // 构建提交数据
+                // 构建提交选中的知识库数据
                 const knowledgeItems = this.selectedKnowledgeNodes.map(item => ({
                     kgid: item.kgid,
                     title: item.label,
                     content: item.content
                 }));
                 
-                // 构建提交数据
+                // 构建提交改行数据和需要提交的知识库数据
                 const submitData = {
                     feedback_id: this.currentFeedbackForKnowledge.md_id,
                     knowledge_ids: this.selectedKnowledgeNodes.map(item => item.kgid),
@@ -729,7 +738,7 @@ module.exports = {
                 };
                 
                 // 在控制台打印JSON结构
-                console.log('提交的知识点数据:', knowledgeItems);
+                console.log('提交的知识点数据:', knowledgeItems,submitData);
                 
                 // 发送请求
                 await axios.post(`${baseUrl}/api/feedback/updateKnowledge`, submitData, {
@@ -739,7 +748,7 @@ module.exports = {
                     }
                 });
                 
-                this.$message.success('知识点关联成功');
+                this.$message.success('知识点提交成功');
                 this.knowledgeDialogVisible = false;
                 
                 // 刷新表格数据

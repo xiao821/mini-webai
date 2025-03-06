@@ -98,6 +98,7 @@ export function appendMessage(role, content, messageId = null) {
                     cancelable: true,
                 });
                 messageInput.dispatchEvent(event);
+                elements.messageInput.focus();
             });
         }
     }

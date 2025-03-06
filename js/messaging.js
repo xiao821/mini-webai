@@ -31,8 +31,17 @@ export function appendMessage(role, content, messageId = null) {
             <div class="h-8 w-8 rounded-full ${avatarClass} flex items-center justify-center text-white font-semibold ${avatarMargin} flex-shrink-0">
                 ${avatarText}
             </div>
-            <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl">
+            <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl flex flex-col">
                 <div class="markdown-content"></div>
+                ${isUser ? `
+                    <div class="flex items-center justify-end mt-2 text-gray-400">
+                        <button class="copy-message-btn hover:text-blue-500 p-1 rounded" data-message="${content}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                        </button>
+                    </div>
+                ` : ''}
                 ${!isUser && role !== 'system' ? `
                     <div class="flex items-center mt-2 space-x-2 text-gray-400">
                         <button class="feedback-btn like-btn hover:text-green-500 p-1 rounded" data-message-id="${messageId}">
@@ -69,6 +78,26 @@ export function appendMessage(role, content, messageId = null) {
             });
             dislikeBtn.addEventListener('click', function () {
                 handleFeedback(messageId, 'dislike');
+            });
+        }
+    }
+
+    // 为用户消息添加复制按钮事件
+    if (isUser) {
+        const copyBtn = messageDiv.querySelector('.copy-message-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+
+                const messageContent = this.getAttribute('data-message');
+                const messageInput = document.getElementById('message-input');
+                messageInput.value = messageContent; // 使用 value 属性
+        
+                // 手动触发 input 事件
+                const event = new Event('input', {
+                    bubbles: true,
+                    cancelable: true,
+                });
+                messageInput.dispatchEvent(event);
             });
         }
     }

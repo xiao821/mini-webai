@@ -145,8 +145,8 @@ export function record_voice(audioBlob) {
 }
 
 // post点踩进行反馈
-export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail) {
-    console.log('dislikefeedback', USER_ID,currentMessageRAG);
+export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail, kb_category, model) {
+    console.log('dislikefeedback', USER_ID, currentMessageRAG,kb_category, model);
     try {
         // 准备请求数据
         const requestData = {
@@ -155,7 +155,9 @@ export async function dislikefeedback(currentMessageRAG, MessageHistory, message
             current_message: messageContent, // 当前消息
             feedback_type: type, // 反馈类型
             detail: detail, // 反馈详情
-            user_id: USER_ID // 用户ID
+            user_id: USER_ID, // 用户ID
+            category: kb_category, // 知识分类
+            model_name: model // 模型
         };
 
         // 发送请求

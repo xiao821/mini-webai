@@ -1,6 +1,9 @@
 import { elements } from './ui.js';
 import { getCurrentConversationId, getConversationById } from './conversations.js';
 import { dislikefeedback } from './api.js';
+import { modeConfig } from './config.js';
+import { getCurrentMode } from './modes.js';
+import { currentModel } from './index.js';
 
 let feedbackMessageId = null;
 let currentConversation = null;
@@ -70,13 +73,20 @@ export async function submitFeedback() {
             content: msg.content,
             role: msg.role
         }));
+
+        // 获取当前模式和对应的 kb_category
+        const currentMode = getCurrentMode();
+        const kb_category = modeConfig[currentMode]?.kb_category || '';
+
         // 等待 API 调用完成
         await dislikefeedback(
             re_kb_reference, 
             simplifiedMessages, 
             messageContent, 
             feedbackType, 
-            feedbackDetail
+            feedbackDetail,
+            kb_category,
+            currentModel
         );
 
         // API 调用成功后显示成功提示

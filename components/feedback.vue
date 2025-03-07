@@ -29,10 +29,12 @@
                 </el-form-item>
                 <el-form-item label="反馈类型">
                     <el-select v-model="filterForm.category" placeholder="请选择类型" clearable>
-                        <el-option label="信息不准确" value="信息不准确"></el-option>
-                        <el-option label="信息不完整" value="信息不完整"></el-option>
-                        <el-option label="回答不相关" value="回答不相关"></el-option>
-                        <el-option label="其他问题" value="其他问题"></el-option>
+                        <el-option 
+                            v-for="type in feedbackTypes" 
+                            :key="type.feedback_type"
+                            :label="type.feedback_type" 
+                            :value="type.feedback_type">
+                        </el-option>
                     </el-select>
                 </el-form-item>
                 <el-form-item label="处理状态">
@@ -96,26 +98,6 @@
                 border
                 ref="feedbackTable"
                 row-key="md_id">
-                <!-- <el-table-column 
-                    type="expand" 
-                    width="0" 
-                    class-name="hidden-expand-column">
-                    <template #default="props">
-                        <el-table
-                            :data="props.row.kb_reference"
-                            style="width: 100%"
-                            row-key="kb_id">
-                            <el-table-column prop="kb_id" label="知识点ID" width="100"></el-table-column>
-                            <el-table-column prop="kb_title" label="知识库标题"></el-table-column>
-                            <el-table-column prop="kb_content" label="知识库内容" show-overflow-tooltip></el-table-column>
-                            <el-table-column prop="kb_simil" label="相似度" width="100">
-                                <template #default="scope">
-                                    {{ scope.row.kb_simil}}%
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </template>
-                </el-table-column> -->
                 <el-table-column prop="date" label="日期" width="180" sortable></el-table-column>
                 <el-table-column prop="feedback_type" label="反馈类型" width="120">
                     <template #default="scope">
@@ -138,25 +120,25 @@
                         </el-tooltip>
                     </template>
                 </el-table-column>
-                <el-table-column prop="AI_model" label="使用模型" show-overflow-tooltip width="120"></el-table-column>
-                <el-table-column prop="knowledge_category" label="知识分类" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="model_name" label="使用模型" show-overflow-tooltip width="120"></el-table-column>
+                <el-table-column prop="category" label="知识分类" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="kb_reference" label="引用知识点" width="100">
                     <template #default="scope">
                         <span 
                             class="clickable-text"
                             @click="viewKbReference(scope.row)">
                             {{ scope.row.kb_reference && scope.row.kb_reference.length > 0 
-                                ? scope.row.kb_reference.map(item => item.kb_id).join(', ') 
-                                : '详情' }}
+                                ? '详情' 
+                                : '暂无知识点' }}
                         </span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="status" label="状态" width="100">
+                <el-table-column prop="treatment_state" label="状态" width="100">
                     <template #default="scope">
                         <el-tag 
-                            :type="getStatusTag(scope.row.status)"
+                            :type="getStatusTag(scope.row.treatment_state)"
                             size="small">
-                            {{ scope.row.status }}
+                            {{ scope.row.treatment_state }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -188,20 +170,13 @@
                             @click="viewKnowledge(scope.row)">
                             知识标注
                         </el-button>
-                        <!-- <el-button 
-                            type="text" 
-                            size="small" 
-                            @click="handleStatus(scope.row)"
-                            :class="{ 'danger-text': scope.row.status === '待处理' }">
-                            {{ scope.row.status === '待处理' ? '已处理' : '待处理' }}
-                        </el-button> -->
-                        <!-- <el-button 
+                        <el-button 
                             style="color: #F77F6C;"
                             type="text" 
                             size="small" 
                             @click="deletefeedback(scope.row)">
                             删除
-                        </el-button> -->
+                        </el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -293,9 +268,9 @@
                             <div class="kb-content">{{ scope.row.kb_content }}</div>
                         </template>
                     </el-table-column>
-                    <el-table-column prop="kb_simil" label="相似度" width="100">
+                    <el-table-column prop="similarity" label="相似度" width="100">
                         <template #default="scope">
-                            {{ scope.row.kb_simil }}%
+                            {{ scope.row.similarity }}%
                         </template>
                     </el-table-column>
                 </el-table>
@@ -432,7 +407,7 @@
                         <p>请从左侧选择知识点查看详情</p>
                     </div>
                     
-                    <el-divider>重新生成AI回答</el-divider>
+                    <!-- <el-divider>重新生成AI回答</el-divider>
                     
                     <div class="regenerate-answer-section">
                         <el-button type="primary" @click="regenerateAIAnswer" :disabled="selectedKnowledgeNodes.length === 0">
@@ -442,7 +417,7 @@
                             <h4>重新生成的回答：</h4>
                             <div class="regenerated-content" v-html="renderedRegeneratedAnswer"></div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <template #footer>
@@ -456,6 +431,7 @@
 </template>
 
 <script type="module">
+// const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
 const baseUrl = 'https://lgdev.baicc.cc/';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
@@ -477,6 +453,8 @@ module.exports = {
                 month: 346,
                 pending: 24
             },
+            // 反馈类型列表
+            feedbackTypes: [],
             // 表格数据
             tableData: [],
             // 分页
@@ -513,7 +491,7 @@ module.exports = {
             // 展开的行
             expandedRows: [],
             // 审核意见
-            audit_status: '暂无',
+            audit_status: '',
             // 引用知识点详情弹窗
             kbReferenceDialogVisible: false,
             // 问答折叠面板激活项
@@ -537,6 +515,22 @@ module.exports = {
         }
     },
     methods: {
+        // 获取反馈类型列表
+        async getFeedbackTypes() {
+            try {
+                const response = await axios.get(`${baseUrl}/api/feedbackType`, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN
+                    }
+                });
+                if (response.data && response.data.feedback_list) {
+                    this.feedbackTypes = response.data.feedback_list;
+                }
+            } catch (error) {
+                console.error('获取反馈类型失败:', error);
+                this.$message.error('获取反馈类型失败');
+            }
+        },
         // 获取表格数据
         async getFeedbackTableData() {
             console.log('this.currentPage',this.currentPage,this.pageSize)
@@ -667,7 +661,10 @@ module.exports = {
         // 查看知识库
         viewKnowledge(row) {
             // 打开知识库弹窗
-            this.currentFeedbackForKnowledge = row;
+            this.currentFeedbackForKnowledge = {
+                ...row,
+                audit_status: row.audit_status || this.audit_status // 使用当前行的处理意见或默认值
+            };
             this.knowledgeDialogVisible = true;
             this.selectedKnowledgeNodes = [];
             this.regeneratedAnswer = '';
@@ -964,10 +961,8 @@ module.exports = {
                 // 构建提交数据
                 const submitData = {
                     feedback_id: this.currentFeedbackForKnowledge.md_id,
-                    knowledge_ids: [
-                        ...this.originalKnowledgeNodes.map(item => item.kb_id),
-                        ...this.selectedKnowledgeNodes.map(item => item.kgid)
-                    ],
+                    treatment_state: '已处理',
+                    review_opinions: this.currentFeedbackForKnowledge.audit_status || '暂无',
                     knowledge_items: allKnowledgeItems
                 };
                 
@@ -1087,24 +1082,10 @@ module.exports = {
         // 处理审核意见变更
         async handleAuditStatusChange(row) {
             try {
-                // 这里可以添加向后端发送更新审核意见的请求
+                // 更新当前行的处理意见
+                row.audit_status = row.audit_status || this.audit_status;
                 console.log('审核意见已更改为:', row.audit_status, '反馈ID:', row.md_id);
-                
-                // 示例API调用（需要根据实际API进行调整）
-                // await axios.post(`${baseUrl}/api/feedback/updateAuditStatus`, {
-                //     feedback_id: row.md_id,
-                //     audit_status: row.audit_status
-                // }, {
-                //     headers: {
-                //         'Authorization': API_AUTH_TOKEN,
-                //         'Content-Type': 'application/json'
-                //     }
-                // });
-                
-                this.$message.success('审核意见更新成功');
             } catch (error) {
-                console.error('更新审核意见失败:', error);
-                this.$message.error('更新审核意见失败: ' + error.message);
                 // 如果更新失败，恢复原来的值
                 this.getFeedbackTableData();
             }
@@ -1112,6 +1093,7 @@ module.exports = {
         // 查看引用知识点详情
         viewKbReference(row) {
             this.currentFeedback = row;
+            console.log('知识点row',row)
             this.kbReferenceDialogVisible = true;
         },
         
@@ -1179,6 +1161,7 @@ module.exports = {
     },
     mounted() {
         this.getFeedbackTableData();
+        this.getFeedbackTypes(); // 获取反馈类型列表
         
         // 使用CDN加载markdown-it
         if (window.markdownit) {

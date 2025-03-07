@@ -1,6 +1,7 @@
 import { getRandomIdFromCookie } from './conversations.js'
 
 // 基础配置
+// export const API_BASE_URL = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
 export const API_BASE_URL = 'https://lgdev.baicc.cc/';
 export const BASE_URL_VOICE = 'https://nlp-demo.szmckj.cn/';
 export const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';

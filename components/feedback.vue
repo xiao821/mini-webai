@@ -27,7 +27,7 @@
                         clearable>
                     </el-input>
                 </el-form-item>
-                <el-form-item label="类型">
+                <el-form-item label="反馈类型">
                     <el-select v-model="filterForm.category" placeholder="请选择类型" clearable>
                         <el-option label="信息不准确" value="信息不准确"></el-option>
                         <el-option label="信息不完整" value="信息不完整"></el-option>
@@ -44,6 +44,7 @@
                 <el-form-item>
                     <el-button type="primary" @click="handleFilter">筛选</el-button>
                     <el-button @click="resetFilter">重置</el-button>
+                    <el-button @click="handleExport">批量导出</el-button>
                 </el-form-item>
             </el-form>
         </div>
@@ -95,7 +96,7 @@
                 border
                 ref="feedbackTable"
                 row-key="md_id">
-                <el-table-column 
+                <!-- <el-table-column 
                     type="expand" 
                     width="0" 
                     class-name="hidden-expand-column">
@@ -114,9 +115,9 @@
                             </el-table-column>
                         </el-table>
                     </template>
-                </el-table-column>
+                </el-table-column> -->
                 <el-table-column prop="date" label="日期" width="180" sortable></el-table-column>
-                <el-table-column prop="feedback_type" label="类型" width="120">
+                <el-table-column prop="feedback_type" label="反馈类型" width="120">
                     <template #default="scope">
                         <el-tag 
                             :type="getCategoryTag(scope.row.feedback_type)"
@@ -125,7 +126,8 @@
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="user_question" label="用户问题" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="detail" label="反馈内容" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="user_question" label="市民原始问题" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="ai_answer" label="AI回答" show-overflow-tooltip>
                     <template #default="scope">
                         <div class="table-cell-content">{{ scope.row.ai_answer }}</div>
@@ -136,7 +138,19 @@
                         </el-tooltip>
                     </template>
                 </el-table-column>
-                <el-table-column prop="detail" label="反馈内容" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="AI_model" label="使用模型" show-overflow-tooltip width="120"></el-table-column>
+                <el-table-column prop="knowledge_category" label="知识分类" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="kb_reference" label="引用知识点" width="100">
+                    <template #default="scope">
+                        <span 
+                            class="clickable-text"
+                            @click="$refs.feedbackTable.toggleRowExpansion(scope.row)">
+                            {{ scope.row.kb_reference && scope.row.kb_reference.length > 0 
+                                ? scope.row.kb_reference.map(item => item.kb_id).join(', ') 
+                                : '详情' }}
+                        </span>
+                    </template>
+                </el-table-column>
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="scope">
                         <el-tag 
@@ -146,30 +160,33 @@
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="kb_reference" label="知识点ID" width="120">
+                <el-table-column prop="audit_status" label="审核意见" width="120">
                     <template #default="scope">
-                        <span 
-                            class="clickable-text"
-                            @click="$refs.feedbackTable.toggleRowExpansion(scope.row)">
-                            {{ scope.row.kb_reference && scope.row.kb_reference.length > 0 
-                                ? scope.row.kb_reference.map(item => item.kb_id).join(', ') 
-                                : '无' }}
-                        </span>
+                        <el-select 
+                            v-model="audit_status" 
+                            size="small"
+                            placeholder="请选择"
+                            @change="handleAuditStatusChange(scope.row)">
+                            <el-option label="通过" value="通过"></el-option>
+                            <el-option label="不通过" value="不通过"></el-option>
+                            <el-option label="待修改" value="待修改"></el-option>
+                            <el-option label="暂无" value="暂无"></el-option>
+                        </el-select>
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="150" fixed="right">
                     <template #default="scope">
                         <el-button 
                             type="text" 
                             size="small" 
                             @click="viewDetail(scope.row)">
-                            详情
+                            对话详情
                         </el-button>
                         <el-button 
                             type="text" 
                             size="small" 
                             @click="viewKnowledge(scope.row)">
-                            知识库
+                            知识标注
                         </el-button>
                         <!-- <el-button 
                             type="text" 
@@ -178,13 +195,13 @@
                             :class="{ 'danger-text': scope.row.status === '待处理' }">
                             {{ scope.row.status === '待处理' ? '已处理' : '待处理' }}
                         </el-button> -->
-                        <el-button 
+                        <!-- <el-button 
                             style="color: #F77F6C;"
                             type="text" 
                             size="small" 
                             @click="deletefeedback(scope.row)">
                             删除
-                        </el-button>
+                        </el-button> -->
                     </template>
                 </el-table-column>
             </el-table>
@@ -222,7 +239,7 @@
                 </div>
                 <div class="detail-item">
                     <label>用户问题：</label>
-                    <div class="detail-content">{{ currentFeedback.user_question }}</div>
+                    <span class="detail-content-inline">{{ currentFeedback.user_question }}</span>
                 </div>
                 <div class="detail-item">
                     <label>AI回答：</label>
@@ -393,7 +410,9 @@ module.exports = {
             // 当前预览节点
             currentPreviewNode: null,
             // 展开的行
-            expandedRows: []
+            expandedRows: [],
+            // 审核意见
+            audit_status: '暂无'
         }
     },
     watch: {
@@ -898,7 +917,36 @@ module.exports = {
             } else {
                 this.expandedRows.push(row.md_id);
             }
-        }
+        },
+        // 批量导出
+        handleExport() {
+            console.log('批量导出')
+        },
+        // 处理审核意见变更
+        async handleAuditStatusChange(row) {
+            try {
+                // 这里可以添加向后端发送更新审核意见的请求
+                console.log('审核意见已更改为:', row.audit_status, '反馈ID:', row.md_id);
+                
+                // 示例API调用（需要根据实际API进行调整）
+                // await axios.post(`${baseUrl}/api/feedback/updateAuditStatus`, {
+                //     feedback_id: row.md_id,
+                //     audit_status: row.audit_status
+                // }, {
+                //     headers: {
+                //         'Authorization': API_AUTH_TOKEN,
+                //         'Content-Type': 'application/json'
+                //     }
+                // });
+                audit_status: row.audit_status
+                this.$message.success('审核意见更新成功');
+            } catch (error) {
+                console.error('更新审核意见失败:', error);
+                this.$message.error('更新审核意见失败: ' + error.message);
+                // 如果更新失败，恢复原来的值
+                this.getFeedbackTableData();
+            }
+        },
     },
     mounted() {
         this.getFeedbackTableData();
@@ -1002,7 +1050,7 @@ module.exports = {
 }
 
 .feedback-detail {
-    padding: 20px;
+    padding: 10px 20px;
 }
 
 .detail-item {
@@ -1212,5 +1260,12 @@ module.exports = {
     margin-left: 5px;
     color: #909399;
     cursor: pointer;
+}
+.el-dialog__body {
+    padding: 0;
+}
+.detail-content-inline {
+    display: inline-block;
+    line-height: 1.5;
 }
 </style>

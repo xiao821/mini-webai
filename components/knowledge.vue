@@ -255,8 +255,8 @@ module.exports =  {
                 
                 const data = await response.json();
                 
-                if (data && data.knowledge_list) {
-                    this.knowledgeItems = data.knowledge_list;
+                if (data && data.feedback_list) {
+                    this.knowledgeItems = data.feedback_list;
                 }
                 
             } catch (error) {

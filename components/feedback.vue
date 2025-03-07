@@ -12,11 +12,12 @@
                 <el-form-item label="日期范围">
                     <el-date-picker
                         v-model="filterForm.dateRange"
-                        type="daterange"
+                        type="datetimerange"
                         range-separator="至"
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
-                        value-format="yyyy-MM-dd">
+                        value-format="yyyy-MM-dd HH:mm:ss"
+                        format="yyyy-MM-dd HH:mm:ss">
                     </el-date-picker>
                 </el-form-item>
                 <el-form-item label="关键词">
@@ -46,7 +47,7 @@
                 <el-form-item>
                     <el-button type="primary" @click="handleFilter">筛选</el-button>
                     <el-button @click="resetFilter">重置</el-button>
-                    <el-button @click="handleExport">批量导出</el-button>
+                    <!-- <el-button @click="handleExport">批量导出</el-button> -->
                 </el-form-item>
             </el-form>
         </div>
@@ -142,21 +143,7 @@
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="audit_status" label="处理意见" width="120">
-                    <template #default="scope">
-                        <el-select 
-                            v-model="scope.row.audit_status" 
-                            size="small"
-                            placeholder="请选择"
-                            @change="handleAuditStatusChange(scope.row)">
-                            <el-option label="通过" value="通过"></el-option>
-                            <el-option label="不通过" value="不通过"></el-option>
-                            <el-option label="待修改" value="待修改"></el-option>
-                            <el-option label="暂无" value="暂无"></el-option>
-                        </el-select>
-                    </template>
-                </el-table-column>
-                <el-table-column label="操作" width="150" fixed="right">
+                <el-table-column label="反馈处理" width="200" fixed="right">
                     <template #default="scope">
                         <el-button 
                             type="text" 
@@ -171,12 +158,18 @@
                             知识标注
                         </el-button>
                         <el-button 
+                            type="text" 
+                            size="small" 
+                            @click="openProcessingDialog(scope.row)">
+                            处理详情
+                        </el-button>
+                        <!-- <el-button 
                             style="color: #F77F6C;"
                             type="text" 
                             size="small" 
                             @click="deletefeedback(scope.row)">
                             删除
-                        </el-button>
+                        </el-button> -->
                     </template>
                 </el-table-column>
             </el-table>
@@ -232,11 +225,11 @@
                 </div>
                 <div class="detail-item">
                     <label>使用模型：</label>
-                    <span>{{ currentFeedback.AI_model }}</span>
+                    <span>{{ currentFeedback.model_name }}</span>
                 </div>
                 <div class="detail-item">
                     <label>知识分类：</label>
-                    <span>{{ currentFeedback.knowledge_category }}</span>
+                    <span>{{ currentFeedback.category }}</span>
                 </div>
                 <div class="detail-item">
                     <label>处理意见：</label>
@@ -245,6 +238,10 @@
                         :type="getAuditStatusTag(currentFeedback.audit_status)">
                         {{ currentFeedback.audit_status || '暂无' }}
                     </el-tag>
+                </div>
+                <div class="detail-item" v-if="currentFeedback.processing_remarks">
+                    <label>处理备注：</label>
+                    <div class="detail-content">{{ currentFeedback.processing_remarks }}</div>
                 </div>
             </div>
         </el-dialog>
@@ -427,6 +424,34 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- 处理详情弹窗 -->
+        <el-dialog 
+            title="处理意见" 
+            :visible="processingDialogVisible"
+            width="400px"
+            @close="handleProcessingDialogClose">
+            <div v-if="currentProcessingFeedback" class="processing-detail">
+                <div class="detail-item">
+                    <label>处理意见：</label>
+                    <el-select 
+                        v-model="currentProcessingFeedback.review_opinions" 
+                        placeholder="请选择处理意见"
+                        style="width: 100%">
+                        <el-option label="通过" value="通过"></el-option>
+                        <el-option label="不通过" value="不通过"></el-option>
+                        <el-option label="待修改" value="待修改"></el-option>
+                        <el-option label="暂无" value="暂无"></el-option>
+                    </el-select>
+                </div>
+            </div>
+            <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="processingDialogVisible = false">取消</el-button>
+                    <el-button type="primary" @click="saveProcessingDetails">保存</el-button>
+                </span>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -505,7 +530,11 @@ module.exports = {
             // 渲染后的重新生成回答
             renderedRegeneratedAnswer: '',
             // 渲染后的知识标注AI回答
-            renderedKnowledgeAIAnswer: ''
+            renderedKnowledgeAIAnswer: '',
+            // 处理详情弹窗
+            processingDialogVisible: false,
+            // 当前处理中的反馈项
+            currentProcessingFeedback: null
         }
     },
     watch: {
@@ -536,21 +565,50 @@ module.exports = {
             console.log('this.currentPage',this.currentPage,this.pageSize)
             this.loading = true;
             try {
-                const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
+                // 构建查询参数，只在有值时才添加参数
+                const params = {
+                    pagenum: this.currentPage,
+                    pagesize: this.pageSize
+                };
+
+                // 只在有值时添加筛选条件
+                if (this.filterForm.category) {
+                    params.feedback_type = this.filterForm.category;
+                }
+                
+                if (this.filterForm.keyword) {
+                    params.detail = this.filterForm.keyword;
+                }
+                
+                if (this.filterForm.status) {
+                    params.treatment_state = this.filterForm.status;
+                }
+                
+                if (this.filterForm.dateRange && this.filterForm.dateRange[0]) {
+                    params.start_time = this.filterForm.dateRange[0];
+                }
+                
+                if (this.filterForm.dateRange && this.filterForm.dateRange[1]) {
+                    params.end_time = this.filterForm.dateRange[1];
+                }
+
+                // const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
+                //     headers: {
+                //         'Authorization': API_AUTH_TOKEN
+                //     },
+                //     params: params
+                // });
+                const response = await axios.get('http://172.16.99.32:1032/api/feedback/getDataByPage/?pagenum=1&pagesize=10',{
                     headers: {
                         'Authorization': API_AUTH_TOKEN
-                    },
-                    params: {
-                        pagenum: this.currentPage,
-                        pagesize: this.pageSize
                     }
-                });
+                })
                 
                 console.log('response',response.data.feedback_list)
                 // 获取总条数
-                if (response.data.feedback_list && response.data.feedback_list.length > 0) {
-                    this.total = response.data.feedback_list[0].total;
-                }
+                // if (response.data.feedback_list && response.data.feedback_list.length > 0) {
+                    this.total = response.data.total;
+                // }
                 
                 // 处理数据，获取用户问题和AI回答
                 this.tableData = response.data.feedback_list.map(feedback => {
@@ -600,6 +658,7 @@ module.exports = {
                         ai_answer: filteredAnswer,
                         status: feedback.treatment_state || '待处理', // 使用 treatment_state 作为状态，如果为空则显示"待处理"
                         date: formatDate(feedback.created_at), // 格式化日期
+                        processing_remarks: feedback.processing_remarks || '' // 处理备注
                     };
                 });
                 
@@ -659,11 +718,11 @@ module.exports = {
             }
         },
         // 查看知识库
-        viewKnowledge(row) {
+        async viewKnowledge(row) {
             // 打开知识库弹窗
             this.currentFeedbackForKnowledge = {
                 ...row,
-                audit_status: row.audit_status || this.audit_status // 使用当前行的处理意见或默认值
+                audit_status: row.audit_status || this.audit_status
             };
             this.knowledgeDialogVisible = true;
             this.selectedKnowledgeNodes = [];
@@ -687,12 +746,18 @@ module.exports = {
             this.originalKnowledgeNodesBackup = [];
             
             if (row.kb_reference && row.kb_reference.length > 0) {
+                // 提取所有的 kb_id
+                const kgids = row.kb_reference.map(item => item.kb_id);
+                
+                // 获取知识点内容
+                const knowledgeContent = await this.fetchKnowledgeContent(kgids);
+                
                 // 转换kb_reference为知识点节点格式
-                this.originalKnowledgeNodes = row.kb_reference.map(item => ({
+                this.originalKnowledgeNodes = row.kb_reference.map((item, index) => ({
                     kb_id: item.kb_id,
-                    kb_title: item.kb_title,
-                    kb_content: item.kb_content,
-                    kb_simil: item.kb_simil
+                    kb_title: knowledgeContent[index] ? knowledgeContent[index].title : '',
+                    kb_content: knowledgeContent[index] ? knowledgeContent[index].content : '',
+                    kb_simil: item.similarity
                 }));
                 
                 // 备份原始知识点，用于重置
@@ -713,6 +778,7 @@ module.exports = {
                 });
                 
                 if (response.data && response.data.knowledge_list && response.data.knowledge_list.length > 0) {
+                    // const treeJson = JSON.parse(response.data.feedback_list[0].tree_json);
                     const treeJson = JSON.parse(response.data.knowledge_list[0].tree_json);
                     this.knowledgeTree = this.transformCategoryTree(treeJson);
                     
@@ -777,9 +843,9 @@ module.exports = {
                     }
                 });
                 
-                if (response.data && response.data.knowledge_list) {
+                if (response.data && response.data.feedback_list) {
                     // 将知识点添加到对应的分类节点下
-                    this.addKnowledgeItemsToTree(category, response.data.knowledge_list);
+                    this.addKnowledgeItemsToTree(category, response.data.feedback_list);
                 }
                 
             } catch (error) {
@@ -812,16 +878,20 @@ module.exports = {
                 this.$set(categoryNode, 'children', []);
             }
             
-            // 转换知识点为树节点格式
-            const knowledgeNodes = items.map(item => ({
-                id: item.kgid,
-                label: item.title,
-                content: item.content,
-                type: 'item',
-                parentId: categoryNode.id,
-                kgid: item.kgid,
-                isLeaf: true
-            }));
+            // 转换知识点为树节点格式，确保每个节点都有唯一的id和kgid
+            const knowledgeNodes = items.map(item => {
+                // 确保每个知识点都有有效的kgid
+                const kgid = item.kgid || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                return {
+                    id: `item-${kgid}`, // 确保id是字符串类型且唯一
+                    label: item.title,
+                    content: item.content,
+                    type: 'item',
+                    parentId: categoryNode.id,
+                    kgid: kgid, // 确保kgid存在
+                    isLeaf: true
+                };
+            });
             
             // 添加到分类节点下
             categoryNode.children = knowledgeNodes;
@@ -849,8 +919,27 @@ module.exports = {
             
             // 检查节点是否已被选中
             if (data.type === 'item') {
-                const isSelected = this.selectedKnowledgeNodes.some(node => node.id === data.id);
-                this.currentPreviewNode.isSelected = isSelected;
+                // 默认设置为未选中
+                this.currentPreviewNode.isSelected = false;
+                
+                // 然后检查是否在已选择列表中
+                const nodeId = data.id || '';
+                const isSelected = this.selectedKnowledgeNodes.some(node => {
+                    const selectedId = node.id || '';
+                    return selectedId === nodeId;
+                });
+                
+                if (isSelected) {
+                    this.currentPreviewNode.isSelected = true;
+                }
+                
+                // 打印节点信息，便于调试
+                console.log('点击知识点:', {
+                    id: data.id,
+                    kgid: data.kgid,
+                    label: data.label,
+                    isSelected: this.currentPreviewNode.isSelected
+                });
             }
             
             // 如果点击的是分类节点，获取该分类下的知识点
@@ -915,12 +1004,17 @@ module.exports = {
         
         // 移除已选择的知识点
         removeSelectedKnowledge(item) {
-            const index = this.selectedKnowledgeNodes.findIndex(node => node.id === item.id);
+            const itemId = item.id || '';
+            const index = this.selectedKnowledgeNodes.findIndex(node => {
+                const nodeId = node.id || '';
+                return nodeId === itemId;
+            });
+            
             if (index !== -1) {
                 this.selectedKnowledgeNodes.splice(index, 1);
                 
                 // 如果当前预览的就是这个节点，更新其选中状态
-                if (this.currentPreviewNode && this.currentPreviewNode.id === item.id) {
+                if (this.currentPreviewNode && (this.currentPreviewNode.id || '') === itemId) {
                     this.currentPreviewNode.isSelected = false;
                 }
             }
@@ -940,37 +1034,39 @@ module.exports = {
             }
             
             try {
-                // 构建提交选中的新知识库数据
+                // 构建提交选中的新知识库数据，确保每个知识点都有有效的kgid
                 const newKnowledgeItems = this.selectedKnowledgeNodes.map(item => ({
-                    kgid: item.kgid,
-                    title: item.label,
-                    content: item.content
+                    kgid: item.kgid || `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    title: item.label || '未命名知识点',
+                    content: item.content || ''
                 }));
                 
                 // 构建保留的原始知识点数据
                 const originalKnowledgeItems = this.originalKnowledgeNodes.map(item => ({
-                    kgid: item.kb_id,
-                    title: item.kb_title,
-                    content: item.kb_content,
-                    kb_simil: item.kb_simil
+                    kgid: item.kb_id || `original-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    title: item.kb_title || '未命名知识点',
+                    content: item.kb_content || '',
+                    kb_simil: item.kb_simil || 0
                 }));
                 
                 // 合并两种知识点
                 const allKnowledgeItems = [...originalKnowledgeItems, ...newKnowledgeItems];
                 
+                // 在控制台打印JSON结构，便于调试
+                console.log('提交的原始知识点数据:', originalKnowledgeItems);
+                console.log('提交的新选择知识点数据:', newKnowledgeItems);
+                console.log('提交的所有知识点数据:', allKnowledgeItems);
+                
                 // 构建提交数据
                 const submitData = {
                     feedback_id: this.currentFeedbackForKnowledge.md_id,
                     treatment_state: '已处理',
-                    review_opinions: this.currentFeedbackForKnowledge.audit_status || '暂无',
-                    knowledge_items: allKnowledgeItems
+                    review_opinions: this.currentFeedbackForKnowledge.review_opinions || '暂无',
+                    right_kgcontent: JSON.stringify(allKnowledgeItems)
                 };
                 
-                // 在控制台打印JSON结构
-                console.log('提交的知识点数据:', submitData);
-                
                 // 发送请求
-                await axios.post(`${baseUrl}/api/feedback/updateKnowledge`, submitData, {
+                await axios.post(`${baseUrl}/api/feedback/updateKnowById/`, submitData, {
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
                         'Content-Type': 'application/json'
@@ -1035,22 +1131,43 @@ module.exports = {
         handlePreviewNodeCheckChange(node) {
             if (node.isSelected) {
                 // 添加到已选择列表
-                const exists = this.selectedKnowledgeNodes.some(item => item.id === node.id);
+                // 确保使用正确的id进行比较，处理可能的undefined情况
+                const nodeId = node.id || '';
+                const exists = this.selectedKnowledgeNodes.some(item => {
+                    const itemId = item.id || '';
+                    return itemId === nodeId;
+                });
+                
                 if (!exists) {
-                    // 确保添加的节点包含所有必要的属性
+                    // 确保添加的节点包含所有必要的属性，并为undefined的属性提供默认值
                     this.selectedKnowledgeNodes.push({
-                        id: node.id,
-                        label: node.label,
-                        content: node.content,
-                        kgid: node.kgid,
-                        type: node.type
+                        id: node.id || `temp-id-${Date.now()}`,
+                        label: node.label || '未命名知识点',
+                        content: node.content || '',
+                        kgid: node.kgid || `temp-kgid-${Date.now()}`,
+                        type: node.type || 'item'
                     });
                 }
+                console.log('已添加节点:', {
+                    id: node.id,
+                    kgid: node.kgid,
+                    label: node.label
+                });
             } else {
                 // 从已选择列表中移除
-                const index = this.selectedKnowledgeNodes.findIndex(item => item.id === node.id);
+                const nodeId = node.id || '';
+                const index = this.selectedKnowledgeNodes.findIndex(item => {
+                    const itemId = item.id || '';
+                    return itemId === nodeId;
+                });
+                
                 if (index !== -1) {
                     this.selectedKnowledgeNodes.splice(index, 1);
+                    console.log('已移除节点:', {
+                        id: node.id,
+                        kgid: node.kgid,
+                        label: node.label
+                    });
                 }
             }
         },
@@ -1068,7 +1185,7 @@ module.exports = {
         },
         // 处理行展开
         handleRowExpand(row) {
-        console.log('row',row)
+        // console.log('row',row)
             if (this.expandedRows.includes(row.md_id)) {
                 this.expandedRows = this.expandedRows.filter(id => id !== row.md_id);
             } else {
@@ -1084,16 +1201,42 @@ module.exports = {
             try {
                 // 更新当前行的处理意见
                 row.audit_status = row.audit_status || this.audit_status;
-                console.log('审核意见已更改为:', row.audit_status, '反馈ID:', row.md_id);
+                // console.log('审核意见已更改为:', row.audit_status, '反馈ID:', row.md_id);
             } catch (error) {
                 // 如果更新失败，恢复原来的值
                 this.getFeedbackTableData();
             }
         },
         // 查看引用知识点详情
-        viewKbReference(row) {
+        async viewKbReference(row) {
             this.currentFeedback = row;
-            console.log('知识点row',row)
+            // console.log('知识点row', row);
+            
+            if (row.kb_reference && Array.isArray(row.kb_reference)) {
+                // 提取所有的 kb_id
+                const kgids = row.kb_reference.map(item => item.kb_id);
+                
+                // 获取知识点内容
+                const knowledgeContent = await this.fetchKnowledgeContent(kgids);
+                
+                // 将获取到的内容与原始数据合并
+                const mergedKbReference = row.kb_reference.map(ref => {
+                    const content = knowledgeContent.find((_, index) => index === row.kb_reference.indexOf(ref));
+                    return {
+                        kb_id: ref.kb_id,
+                        similarity: ref.similarity,
+                        kb_title: content ? content.title : '',
+                        kb_content: content ? content.content : ''
+                    };
+                });
+                
+                // 更新当前反馈的知识点引用数据
+                this.currentFeedback = {
+                    ...row,
+                    kb_reference: mergedKbReference
+                };
+            }
+            
             this.kbReferenceDialogVisible = true;
         },
         
@@ -1156,6 +1299,60 @@ module.exports = {
             } catch (error) {
                 console.error('生成回答失败:', error);
                 this.$message.error('生成回答失败: ' + error.message);
+            }
+        },
+        // 添加新的方法来获取知识点内容
+        async fetchKnowledgeContent(kgids) {
+            try {
+                const response = await axios.post(`${baseUrl}/api/feedbackKnow_Cnt`, kgids, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.data && response.data.feedback_list) {
+                    return response.data.feedback_list;
+                }
+                return [];
+            } catch (error) {
+                console.error('获取知识点内容失败:', error);
+                this.$message.error('获取知识点内容失败');
+                return [];
+            }
+        },
+        // 打开处理详情弹窗
+        openProcessingDialog(row) {
+            this.currentProcessingFeedback = {
+                md_id: row.md_id,
+                review_opinions: row.review_opinions || '暂无'
+            };
+            this.processingDialogVisible = true;
+        },
+        // 处理处理详情弹窗关闭
+        handleProcessingDialogClose() {
+            this.processingDialogVisible = false;
+            this.currentProcessingFeedback = null;
+        },
+        // 保存处理详情
+        async saveProcessingDetails() {
+            if (!this.currentProcessingFeedback) {
+                this.$message.warning('未选择反馈项');
+                return;
+            }
+            
+            try {
+                // 更新本地表格数据中的处理意见
+                const index = this.tableData.findIndex(item => item.md_id === this.currentProcessingFeedback.md_id);
+                if (index !== -1) {
+                    this.tableData[index].review_opinions = this.currentProcessingFeedback.review_opinions;
+                }
+                
+                this.processingDialogVisible = false;
+                
+            } catch (error) {
+                console.error('提交处理意见失败:', error);
+                this.$message.error('提交处理意见失败: ' + error.message);
             }
         },
     },
@@ -1505,7 +1702,6 @@ module.exports = {
     line-height: 1.5;
     max-height: 200px;
     overflow-y: auto;
-    white-space: pre-wrap;
 }
 
 /* 已引用知识点区域样式 */
@@ -1633,5 +1829,29 @@ module.exports = {
     content: "";
     display: table;
     clear: both;
+}
+
+/* 处理详情弹窗样式 */
+.processing-detail {
+    padding: 20px 10px;
+}
+
+.processing-detail .detail-item {
+    margin-bottom: 20px;
+}
+
+.processing-detail .detail-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #606266;
+}
+
+.processing-detail .el-select {
+    width: 100%;
+}
+
+.processing-detail .el-textarea {
+    width: 100%;
 }
 </style>

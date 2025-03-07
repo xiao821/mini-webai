@@ -2,6 +2,19 @@ import { API_BASE_URL, API_AUTH_TOKEN, USER_ID, R1_MODEL, QW_MODEL, BASE_URL_VOI
 import { modeConfig } from './config.js';
 import { currentModel } from './index.js';
 
+// 获取知识分类
+export async function fetchKnowledgeCategory() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/feedback/getKnowleCate/`, {
+            headers: { 'Authorization': API_AUTH_TOKEN }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('获取知识分类失败:', error);
+        throw error;
+    }
+}
+
 // 获取新会话ID
 export async function generateId() {
     console.log('generateId', USER_ID);

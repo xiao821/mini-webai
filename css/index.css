@@ -311,3 +311,79 @@ textarea {
 #model-qw:checked {
     color: #10b981; /* 绿色 */
 }
+
+/* 知识分类树样式 */
+.category-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.category-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.category-item.active {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.subcategory-container {
+    margin-left: 16px;
+    border-left: 1px dashed #e5e7eb;
+    padding-left: 8px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.subcategory-item {
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+    font-size: 13px;
+}
+
+.subcategory-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.subcategory-item.active {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.category-toggle {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    line-height: 16px;
+    margin-right: 6px;
+    font-size: 10px;
+    border-radius: 3px;
+    background-color: #f3f4f6;
+    transition: transform 0.2s;
+    color: #4b5563;
+}
+
+.category-toggle.expanded {
+    transform: rotate(90deg);
+    color: #2563eb;
+}
+
+.category-item.active .category-toggle {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+}
+
+.category-item.active > div > span:not(.category-toggle) {
+    font-weight: 600;
+    color: #2563eb;
+}

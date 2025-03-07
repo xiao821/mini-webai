@@ -5,6 +5,7 @@ import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } fr
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
 import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
 import { record_voice } from './api.js';
+import { initKnowledgeCategory } from './knowledge_category.js';
 
 // 全局状态
 let isWaitingForResponse = false;
@@ -27,6 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 添加事件监听
     setupEventListeners();
+
+    // 初始化知识分类
+    initKnowledgeCategory();
 
     // 初始加载默认模式欢迎信息
     // setWelcomeMessage('default');

@@ -141,6 +141,16 @@ function selectCategory(categoryName) {
         el.classList.remove('active');
     });
     
+    // 如果点击的是当前已选中的分类，则取消选中
+    if (selectedCategory === categoryName) {
+        selectedCategory = '';
+        selectedCategoryElement.textContent = '';
+        
+        // 更新模式配置中的kb_category为空
+        updateKbCategory('');
+        return;
+    }
+    
     // 只查找并添加子分类的选中样式
     const subcategoryElements = document.querySelectorAll('.subcategory-item');
     

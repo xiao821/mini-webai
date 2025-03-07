@@ -133,7 +133,7 @@ export function record_voice(audioBlob) {
 
 // post点踩进行反馈
 export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail) {
-    console.log('dislikefeedback', USER_ID);
+    console.log('dislikefeedback', USER_ID,currentMessageRAG);
     try {
         // 准备请求数据
         const requestData = {

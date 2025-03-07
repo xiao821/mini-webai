@@ -34,18 +34,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
 let currentModel = R1_MODEL
 // 切换模型
-const toggle = document.getElementById('model-toggle');
-toggle.addEventListener('change', function () {
+const modelR1Radio = document.getElementById('model-r1');
+const modelQwRadio = document.getElementById('model-qw');
+
+// 初始化选中状态
+modelR1Radio.checked = true;
+modelQwRadio.checked = false;
+
+// 添加事件监听
+modelR1Radio.addEventListener('change', function() {
     if (this.checked) {
-        currentModel = R1_MODEL; // R1_MODEL
+        currentModel = R1_MODEL;
         console.log('选择的模型是: R1_MODEL');
-    } else {
-        currentModel = QW_MODEL; // QW_MODEL
+    }
+});
+
+modelQwRadio.addEventListener('change', function() {
+    if (this.checked) {
+        currentModel = QW_MODEL;
         console.log('选择的模型是: QW_MODEL');
     }
 });
-export { currentModel }
 
+export { currentModel }
 
 // 初始化应用
 async function initializeApp() {

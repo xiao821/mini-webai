@@ -144,7 +144,7 @@
                     <template #default="scope">
                         <span 
                             class="clickable-text"
-                            @click="$refs.feedbackTable.toggleRowExpansion(scope.row)">
+                            @click="viewKbReference(scope.row)">
                             {{ scope.row.kb_reference && scope.row.kb_reference.length > 0 
                                 ? scope.row.kb_reference.map(item => item.kb_id).join(', ') 
                                 : '详情' }}
@@ -160,10 +160,10 @@
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="audit_status" label="审核意见" width="120">
+                <el-table-column prop="audit_status" label="处理意见" width="120">
                     <template #default="scope">
                         <el-select 
-                            v-model="audit_status" 
+                            v-model="scope.row.audit_status" 
                             size="small"
                             placeholder="请选择"
                             @change="handleAuditStatusChange(scope.row)">
@@ -255,6 +255,50 @@
                         {{ currentFeedback.status }}
                     </el-tag>
                 </div>
+                <div class="detail-item">
+                    <label>使用模型：</label>
+                    <span>{{ currentFeedback.AI_model }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>知识分类：</label>
+                    <span>{{ currentFeedback.knowledge_category }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>处理意见：</label>
+                    <el-tag 
+                        size="small" 
+                        :type="getAuditStatusTag(currentFeedback.audit_status)">
+                        {{ currentFeedback.audit_status || '暂无' }}
+                    </el-tag>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- 引用知识点详情弹框 -->
+        <el-dialog 
+            title="引用知识点详情" 
+            :visible="kbReferenceDialogVisible"
+            width="70%"
+            @close="handleKbReferenceDialogClose">
+            <div v-if="currentFeedback" class="kb-reference-detail">
+                <el-table
+                    :data="currentFeedback.kb_reference || []"
+                    style="width: 100%"
+                    border
+                    row-key="kb_id">
+                    <el-table-column prop="kb_id" label="知识点ID" width="100"></el-table-column>
+                    <el-table-column prop="kb_title" label="知识库标题"></el-table-column>
+                    <el-table-column prop="kb_content" label="知识库内容" show-overflow-tooltip>
+                        <template #default="scope">
+                            <div class="kb-content">{{ scope.row.kb_content }}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="kb_simil" label="相似度" width="100">
+                        <template #default="scope">
+                            {{ scope.row.kb_simil }}%
+                        </template>
+                    </el-table-column>
+                </el-table>
             </div>
         </el-dialog>
 
@@ -263,6 +307,7 @@
             title="选择正确的知识点" 
             :visible="knowledgeDialogVisible"
             width="80%"
+            top="5vh"
             @close="handleKnowledgeDialogClose">
             <div class="knowledge-dialog-container">
                 <!-- 左侧知识树 -->
@@ -301,19 +346,79 @@
                 
                 <!-- 右侧知识点预览 -->
                 <div class="knowledge-preview-panel">
-                    <h3>知识点内容预览</h3>
+                    <!-- 用户问题和AI回答区域 -->
+                    <div class="user-qa-section">
+                        <el-collapse v-model="qaCollapseActive">
+                            <el-collapse-item title="市民原始问题" name="question">
+                                <div class="qa-content">{{ currentFeedbackForKnowledge ? currentFeedbackForKnowledge.user_question : '' }}</div>
+                            </el-collapse-item>
+                            <el-collapse-item title="AI回答" name="answer">
+                                <div class="qa-content" v-html="renderedKnowledgeAIAnswer"></div>
+                            </el-collapse-item>
+                        </el-collapse>
+                    </div>
+                    
+                    <el-divider>原始引用的知识点</el-divider>
+                    
+                    <!-- 已引用的知识点 -->
+                    <div class="referenced-knowledge-section">
+                        <div v-if="originalKnowledgeNodes.length > 0" class="referenced-nodes">
+                            <el-tag
+                                v-for="item in originalKnowledgeNodes"
+                                :key="item.kb_id"
+                                closable
+                                type="info"
+                                @close="removeOriginalKnowledge(item)"
+                                class="referenced-tag">
+                                {{ item.kb_title }}
+                            </el-tag>
+                        </div>
+                        <div v-else class="no-referenced-nodes">
+                            <p>暂无原始引用的知识点</p>
+                        </div>
+                        <div class="reset-button-container">
+                            <el-button size="small" @click="resetOriginalKnowledge">召回引用知识点</el-button>
+                        </div>
+                    </div>
+                    
+                    <!-- 已选择的知识点（新增的知识点）-->
+                    <div v-if="selectedKnowledgeNodes.length > 0" class="selected-nodes-section">
+                        <div class="selected-nodes-title">新选择的知识点</div>
+                        <div class="selected-nodes">
+                            <el-tag
+                                v-for="item in selectedKnowledgeNodes"
+                                :key="item.id"
+                                closable
+                                type="success"
+                                @close="removeSelectedKnowledge(item)"
+                                class="selected-tag">
+                                {{ item.label }}
+                            </el-tag>
+                        </div>
+                    </div>
+                    <div v-else class="no-selected-nodes">
+                        <p>尚未选择任何新知识点</p>
+                    </div>
+                    
+                    <el-divider>知识点内容预览</el-divider>
+                    
                     <div v-if="currentPreviewNode && currentPreviewNode.type === 'item'" class="preview-content">
                         <el-card class="knowledge-item-card" shadow="hover">
                             <template #header>
                                 <div class="clearfix">
+                                    <span class="knowledge-item-title">{{ currentPreviewNode.label }}</span>
                                     <el-checkbox 
                                         v-model="currentPreviewNode.isSelected" 
-                                        @change="handlePreviewNodeCheckChange(currentPreviewNode)">
-                                        {{ currentPreviewNode.label }}
+                                        @change="handlePreviewNodeCheckChange(currentPreviewNode)"
+                                        class="knowledge-item-checkbox">
+                                        {{ currentPreviewNode.isSelected ? '已选择' : '选择' }}
                                     </el-checkbox>
                                 </div>
                             </template>
                             <div class="item-content">{{ currentPreviewNode.content || '暂无内容' }}</div>
+                            <div class="item-tip" v-if="currentPreviewNode.isSelected">
+                                <i class="el-icon-success"></i> 该知识点已添加到上方的"已选择的知识点"区域
+                            </div>
                         </el-card>
                     </div>
                     <div v-else-if="currentPreviewNode && currentPreviewNode.type === 'category'" class="preview-content">
@@ -327,20 +432,16 @@
                         <p>请从左侧选择知识点查看详情</p>
                     </div>
                     
-                    <el-divider>已选择的知识点</el-divider>
+                    <el-divider>重新生成AI回答</el-divider>
                     
-                    <div v-if="selectedKnowledgeNodes.length > 0" class="selected-nodes">
-                        <el-tag
-                            v-for="item in selectedKnowledgeNodes"
-                            :key="item.id"
-                            closable
-                            @close="removeSelectedKnowledge(item)"
-                            class="selected-tag">
-                            {{ item.label }}
-                        </el-tag>
-                    </div>
-                    <div v-else class="no-selected-nodes">
-                        <p>尚未选择任何知识点</p>
+                    <div class="regenerate-answer-section">
+                        <el-button type="primary" @click="regenerateAIAnswer" :disabled="selectedKnowledgeNodes.length === 0">
+                            根据选择的知识点重新生成回答
+                        </el-button>
+                        <div v-if="regeneratedAnswer" class="regenerated-answer">
+                            <h4>重新生成的回答：</h4>
+                            <div class="regenerated-content" v-html="renderedRegeneratedAnswer"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -412,7 +513,21 @@ module.exports = {
             // 展开的行
             expandedRows: [],
             // 审核意见
-            audit_status: '暂无'
+            audit_status: '暂无',
+            // 引用知识点详情弹窗
+            kbReferenceDialogVisible: false,
+            // 问答折叠面板激活项
+            qaCollapseActive: ['question', 'answer'],
+            // 原始引用的知识点
+            originalKnowledgeNodes: [],
+            // 原始引用知识点备份（用于重置）
+            originalKnowledgeNodesBackup: [],
+            // 重新生成的AI回答
+            regeneratedAnswer: '',
+            // 渲染后的重新生成回答
+            renderedRegeneratedAnswer: '',
+            // 渲染后的知识标注AI回答
+            renderedKnowledgeAIAnswer: ''
         }
     },
     watch: {
@@ -555,6 +670,37 @@ module.exports = {
             this.currentFeedbackForKnowledge = row;
             this.knowledgeDialogVisible = true;
             this.selectedKnowledgeNodes = [];
+            this.regeneratedAnswer = '';
+            this.renderedRegeneratedAnswer = '';
+            
+            // 渲染AI回答
+            if (row.ai_answer && this.md) {
+                try {
+                    this.renderedKnowledgeAIAnswer = this.md.render(row.ai_answer);
+                } catch (error) {
+                    console.error('Markdown渲染失败:', error);
+                    this.renderedKnowledgeAIAnswer = row.ai_answer;
+                }
+            } else {
+                this.renderedKnowledgeAIAnswer = row.ai_answer;
+            }
+            
+            // 初始化原始引用的知识点
+            this.originalKnowledgeNodes = [];
+            this.originalKnowledgeNodesBackup = [];
+            
+            if (row.kb_reference && row.kb_reference.length > 0) {
+                // 转换kb_reference为知识点节点格式
+                this.originalKnowledgeNodes = row.kb_reference.map(item => ({
+                    kb_id: item.kb_id,
+                    kb_title: item.kb_title,
+                    kb_content: item.kb_content,
+                    kb_simil: item.kb_simil
+                }));
+                
+                // 备份原始知识点，用于重置
+                this.originalKnowledgeNodesBackup = JSON.parse(JSON.stringify(this.originalKnowledgeNodes));
+            }
             
             // 获取知识库分类树
             this.fetchKnowledgeCategories();
@@ -763,6 +909,11 @@ module.exports = {
             this.selectedKnowledgeNodes = [];
             this.knowledgeTree = [];
             this.currentPreviewNode = null;
+            this.originalKnowledgeNodes = [];
+            this.originalKnowledgeNodesBackup = [];
+            this.regeneratedAnswer = '';
+            this.renderedRegeneratedAnswer = '';
+            this.renderedKnowledgeAIAnswer = '';
         },
         
         // 移除已选择的知识点
@@ -785,28 +936,43 @@ module.exports = {
                 return;
             }
             
-            if (this.selectedKnowledgeNodes.length === 0) {
+            // 检查是否至少有一个知识点（原始或新选择的）
+            if (this.selectedKnowledgeNodes.length === 0 && this.originalKnowledgeNodes.length === 0) {
                 this.$message.warning('请至少选择一个知识点');
                 return;
             }
             
             try {
-                // 构建提交选中的知识库数据
-                const knowledgeItems = this.selectedKnowledgeNodes.map(item => ({
+                // 构建提交选中的新知识库数据
+                const newKnowledgeItems = this.selectedKnowledgeNodes.map(item => ({
                     kgid: item.kgid,
                     title: item.label,
                     content: item.content
                 }));
                 
-                // 构建提交改行数据和需要提交的知识库数据
+                // 构建保留的原始知识点数据
+                const originalKnowledgeItems = this.originalKnowledgeNodes.map(item => ({
+                    kgid: item.kb_id,
+                    title: item.kb_title,
+                    content: item.kb_content,
+                    kb_simil: item.kb_simil
+                }));
+                
+                // 合并两种知识点
+                const allKnowledgeItems = [...originalKnowledgeItems, ...newKnowledgeItems];
+                
+                // 构建提交数据
                 const submitData = {
                     feedback_id: this.currentFeedbackForKnowledge.md_id,
-                    knowledge_ids: this.selectedKnowledgeNodes.map(item => item.kgid),
-                    knowledge_items: knowledgeItems
+                    knowledge_ids: [
+                        ...this.originalKnowledgeNodes.map(item => item.kb_id),
+                        ...this.selectedKnowledgeNodes.map(item => item.kgid)
+                    ],
+                    knowledge_items: allKnowledgeItems
                 };
                 
                 // 在控制台打印JSON结构
-                console.log('提交的知识点数据:', knowledgeItems,submitData);
+                console.log('提交的知识点数据:', submitData);
                 
                 // 发送请求
                 await axios.post(`${baseUrl}/api/feedback/updateKnowledge`, submitData, {
@@ -846,20 +1012,6 @@ module.exports = {
                 this.$message.info('已取消删除');
             });
         },
-        // 处理状态变更
-        // handleStatus(row) {
-        //     console.log('row',row.status)
-        //     const newStatus = row.status === '待处理' ? '已处理' : '待处理';
-        //     this.$confirm(`确认将该反馈标记为${newStatus}?`, '提示', {
-        //         confirmButtonText: '确定',
-        //         cancelButtonText: '取消',
-        //         type: 'warning'
-        //     }).then(() => {
-        //         row.status = newStatus;
-        //         this.$message.success('状态更新成功');
-        //         this.getFeedbackTableData();
-        //     }).catch(() => {});
-        // },
         // 获取分类标签类型
         getCategoryTag(category) {
             const map = {
@@ -873,6 +1025,16 @@ module.exports = {
         // 获取状态标签类型
         getStatusTag(status) {
             return status === '待处理' ? 'danger' : 'success';
+        },
+        // 获取处理意见标签类型
+        getAuditStatusTag(status) {
+            const map = {
+                '通过': 'success',
+                '不通过': 'danger',
+                '待修改': 'warning',
+                '暂无': 'info'
+            };
+            return map[status] || 'info';
         },
         // 处理预览节点变化
         handlePreviewNodeCheckChange(node) {
@@ -938,13 +1100,80 @@ module.exports = {
                 //         'Content-Type': 'application/json'
                 //     }
                 // });
-                audit_status: row.audit_status
+                
                 this.$message.success('审核意见更新成功');
             } catch (error) {
                 console.error('更新审核意见失败:', error);
                 this.$message.error('更新审核意见失败: ' + error.message);
                 // 如果更新失败，恢复原来的值
                 this.getFeedbackTableData();
+            }
+        },
+        // 查看引用知识点详情
+        viewKbReference(row) {
+            this.currentFeedback = row;
+            this.kbReferenceDialogVisible = true;
+        },
+        
+        // 处理引用知识点弹框关闭
+        handleKbReferenceDialogClose() {
+            this.kbReferenceDialogVisible = false;
+        },
+        // 移除原始引用的知识点
+        removeOriginalKnowledge(item) {
+            const index = this.originalKnowledgeNodes.findIndex(node => node.kb_id === item.kb_id);
+            if (index !== -1) {
+                this.originalKnowledgeNodes.splice(index, 1);
+            }
+        },
+        
+        // 重置原始引用的知识点
+        resetOriginalKnowledge() {
+            this.originalKnowledgeNodes = JSON.parse(JSON.stringify(this.originalKnowledgeNodesBackup));
+        },
+        
+        // 重新生成AI回答
+        async regenerateAIAnswer() {
+            if (this.selectedKnowledgeNodes.length === 0) {
+                this.$message.warning('请至少选择一个知识点');
+                return;
+            }
+            
+            if (!this.currentFeedbackForKnowledge || !this.currentFeedbackForKnowledge.user_question) {
+                this.$message.warning('无法获取用户问题');
+                return;
+            }
+            
+            this.$message.info('正在生成回答，请稍候...');
+            
+            try {
+                // 这里应该调用后端API来重新生成回答
+                // 由于没有实际的API，这里模拟一个回答
+                
+                // 模拟API调用延迟
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // 模拟生成的回答
+                const knowledgePoints = this.selectedKnowledgeNodes.map(node => node.content).join('\n\n');
+                this.regeneratedAnswer = `根据您的问题"${this.currentFeedbackForKnowledge.user_question}"，我找到了以下信息：\n\n${knowledgePoints}\n\n希望这些信息对您有所帮助！`;
+                
+                // 渲染Markdown
+                if (this.md) {
+                    try {
+                        this.renderedRegeneratedAnswer = this.md.render(this.regeneratedAnswer);
+                    } catch (error) {
+                        console.error('Markdown渲染失败:', error);
+                        this.renderedRegeneratedAnswer = this.regeneratedAnswer;
+                    }
+                } else {
+                    this.renderedRegeneratedAnswer = this.regeneratedAnswer;
+                }
+                
+                this.$message.success('回答生成成功');
+                
+            } catch (error) {
+                console.error('生成回答失败:', error);
+                this.$message.error('生成回答失败: ' + error.message);
             }
         },
     },
@@ -1112,7 +1341,7 @@ module.exports = {
 /* 知识库弹窗样式 */
 .knowledge-dialog-container {
     display: flex;
-    height: 600px;
+    height: 750px;
     overflow: hidden;
 }
 
@@ -1267,5 +1496,159 @@ module.exports = {
 .detail-content-inline {
     display: inline-block;
     line-height: 1.5;
+}
+
+/* 知识点引用弹框样式 */
+.kb-reference-detail {
+    padding: 20px;
+}
+
+.kb-content {
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+/* 用户问题和AI回答区域样式 */
+.user-qa-section {
+    margin-bottom: 20px;
+}
+
+.qa-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+/* 已引用知识点区域样式 */
+.referenced-knowledge-section {
+    margin-bottom: 20px;
+}
+
+.referenced-nodes {
+    margin-bottom: 10px;
+}
+
+.referenced-tag {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.no-referenced-nodes {
+    text-align: center;
+    padding: 20px 0;
+    color: #909399;
+}
+
+.reset-button-container {
+    margin-top: 10px;
+    text-align: right;
+}
+
+/* 新增的知识点区域样式 */
+.selected-nodes-section {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f0f9eb;
+    border-radius: 4px;
+    border-left: 3px solid #67c23a;
+}
+
+.selected-nodes-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #67c23a;
+}
+
+.selected-nodes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selected-tag {
+    margin-bottom: 5px;
+}
+
+.no-selected-nodes {
+    text-align: center;
+    padding: 10px 0;
+    color: #909399;
+    font-style: italic;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* 重新生成回答区域样式 */
+.regenerate-answer-section {
+    margin-top: 20px;
+}
+
+.regenerated-answer {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f0f9eb;
+    border-radius: 4px;
+    border-left: 3px solid #67c23a;
+}
+
+.regenerated-content {
+    margin-top: 10px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* 知识点卡片标题和复选框样式 */
+.knowledge-item-title {
+    font-weight: bold;
+    display: inline-block;
+    max-width: 85%;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+.knowledge-item-checkbox {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.item-tip {
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #f0f9eb;
+    color: #67c23a;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.item-tip i {
+    margin-right: 5px;
+}
+
+/* 自定义复选框颜色 */
+.knowledge-item-checkbox .el-checkbox__input.is-checked .el-checkbox__inner {
+    background-color: #409EFF;
+    border-color: #409EFF;
+}
+
+.knowledge-item-checkbox .el-checkbox__inner {
+    border-color: #606266;
+    border-width: 2px;
+}
+
+.knowledge-item-checkbox .el-checkbox__inner:hover {
+    border-color: #409EFF;
+}
+
+.clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
 }
 </style>

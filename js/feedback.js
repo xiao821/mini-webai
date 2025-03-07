@@ -22,6 +22,7 @@ export async function handleFeedback(messageId, type) {
     if (typeof kb_reference === 'string') {
       try {
         re_kb_reference = JSON.parse(kb_reference); // 将字符串解析为数组
+        console.log('re_kb_reference', re_kb_reference);    
       } catch (error) {
         console.error('Failed to parse kb_reference:', error);
       }

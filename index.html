@@ -91,12 +91,15 @@
 
         <!-- 输入区域 -->
         <div class="p-4 border-t border-gray-200 bg-white">
-            <div class="flex items-center mb-4">
-                <input type="checkbox" id="model-toggle" class="toggle-checkbox hidden" checked />
-                <label for="model-toggle" class="toggle-label rounded-full w-12 h-6 flex items-center p-1 cursor-pointer">
-                    <span class="toggle-dot bg-white rounded-full w-4 h-4 transition-transform duration-300"></span>
+            <div class="flex items-center mb-4 space-x-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="model-select" id="model-r1" class="form-radio text-blue-600 h-4 w-4" value="r1" checked />
+                    <span class="ml-2 text-sm font-medium">深度思考(R1)</span>
                 </label>
-                <span class="ml-2 text-sm font-medium">深度思考(R1)</span>
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="model-select" id="model-qw" class="form-radio text-green-600 h-4 w-4" value="qw" />
+                    <span class="ml-2 text-sm font-medium">通义千问(QW)</span>
+                </label>
             </div>
             <form id="chat-form" class="flex items-end">
                 <div class="flex-1 relative">

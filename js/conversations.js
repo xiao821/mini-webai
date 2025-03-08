@@ -1,4 +1,4 @@
-import { elements, clearChatContainer, setWelcomeMessage } from './ui.js';
+import { elements, clearChatContainer, setWelcomeMessage, renderMarkdown } from './ui.js';
 import { appendMessage } from './messaging.js';
 import { fetchChatHistory, deleteChatById, generateId, fetchChatList } from './api.js';
 import { modeConfig } from './config.js';
@@ -154,6 +154,15 @@ export async function switchConversation(id) {
             // 如果有历史消息，则显示
             messagesHistory.forEach(msg => {
                 const messageId = msg.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                
+                // 处理 <a> 标签
+                if (msg.content.includes("<think>")) {
+                    msg.content = msg.content.replace(/<think>/g, "```");
+                }
+                if (msg.content.includes("</think>")) {
+                    msg.content = msg.content.replace(/<\/think>/g, "```");
+                }
+
                 appendMessage(msg.role, msg.content, messageId);
             });
 

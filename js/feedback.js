@@ -20,7 +20,7 @@ export async function handleFeedback(messageId, type) {
     // 从会话历史中获取消息内容
     messageContent = currentConversation.messages.find(msg => msg.id === messageId)?.content;
     let kb_reference = currentConversation.messages.find(msg => msg.id === messageId)?.knowledge_data;
-    console.log('字符串 kb_reference', kb_reference);
+    console.log('字符串 kb_reference', kb_reference,currentConversation);
     // 检查 kb_reference 是否是字符串，并尝试解析为数组
     if (typeof kb_reference === 'string') {
       try {

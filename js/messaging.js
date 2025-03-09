@@ -217,6 +217,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
                         // 处理knowledge事件数据
                         if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
+                            console.log("收到 knowledge 数据块:", jsonStr);
                             knowledgeData = jsonStr;  // 直接存储原始数据
                             continue;
                         }

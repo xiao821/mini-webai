@@ -190,6 +190,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             let firstCharacterRendered = false;
             let currentEvent = null;
             let knowledgeData = null;
+            let jsonBuffer = ""; // 添加JSON缓冲区
 
             // 通过reader.read()处理流式响应
             while (true) {
@@ -210,7 +211,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                         continue;
                     }
                     if (line.startsWith("data:")) {
-                        const jsonStr = line.substring(5).trim();
+                        let jsonStr = line.substring(5).trim();
                         if (!jsonStr) continue;
                         if (jsonStr.includes("DONE")) continue;
 
@@ -220,52 +221,91 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                             continue;
                         }
 
+                        // 处理可能被分割的JSON
+                        if (!jsonStr.startsWith("{") && jsonBuffer) {
+                            // 这可能是前一个JSON的继续
+                            jsonBuffer += jsonStr;
+                            jsonStr = jsonBuffer;
+                        } else if (jsonStr.startsWith("{") && !jsonStr.endsWith("}")) {
+                            // 这是一个新的不完整JSON
+                            jsonBuffer = jsonStr;
+                            continue;
+                        } else if (jsonStr.startsWith("{") && jsonStr.endsWith("}")) {
+                            // 完整的JSON，重置缓冲区
+                            jsonBuffer = "";
+                        }
+
                         try {
-                            const data = JSON.parse(jsonStr);
+                            // 检查JSON字符串是否完整
+                            if (jsonStr.endsWith('}') || jsonStr.endsWith(']')) {
+                                const data = JSON.parse(jsonStr);
 
-                            // 从流中提取内容
-                            if (data.choices && data.choices.length > 0 && data.choices[0].delta) {
-                                const delta = data.choices[0].delta;
+                                // 从流中提取内容
+                                if (data.choices && data.choices.length > 0 && data.choices[0].delta) {
+                                    const delta = data.choices[0].delta;
 
-                                // 如果有内容，添加到累积内容中
-                                if (delta.content) {
-                                    const content = delta.content;
+                                    // 如果有内容，添加到累积内容中
+                                    if (delta.content) {
+                                        const content = delta.content;
 
-                                    if (content === "" || content.includes("<think>")) {
-                                        fullContent += "```思考过程";
-                                        think_status = 1;
-                                        continue;
-                                    } else if (content.includes("</think>")) {
-                                        fullContent += "```\n";
-                                        think_status = 2;
-                                        continue;
-                                    }
+                                        if (content === "" || content.includes("<think>")) {
+                                            fullContent += "```思考过程";
+                                            think_status = 1;
+                                            continue;
+                                        } else if (content.includes("</think>")) {
+                                            fullContent += "```\n";
+                                            think_status = 2;
+                                            continue;
+                                        }
 
-                                    // 在收到第一个有效内容时创建消息元素
-                                    if (!messageElement) {
-                                        removeTypingIndicator();
-                                        messageElement = createEmptyAssistantMessage(aiMessageId);
-                                        elements.chatContainer.appendChild(messageElement);
-                                        contentElement = messageElement.querySelector('.markdown-content');
-                                    }
+                                        // 在收到第一个有效内容时创建消息元素
+                                        if (!messageElement) {
+                                            removeTypingIndicator();
+                                            messageElement = createEmptyAssistantMessage(aiMessageId);
+                                            elements.chatContainer.appendChild(messageElement);
+                                            contentElement = messageElement.querySelector('.markdown-content');
+                                        }
 
-                                    fullContent += content;
-                                    accumulatedContent += content;
+                                        fullContent += content;
+                                        accumulatedContent += content;
 
-                                    // 积累一定量的内容后再更新UI，以提高性能
-                                    if (accumulatedContent.length > 10 || content.includes("\n")) {
-                                        renderMarkdown(contentElement, fullContent);
-                                        accumulatedContent = "";
-                                        // 滚动到底部
-                                        elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+                                        // 积累一定量的内容后再更新UI，以提高性能
+                                        if (accumulatedContent.length > 10 || content.includes("\n")) {
+                                            renderMarkdown(contentElement, fullContent);
+                                            accumulatedContent = "";
+                                            // 滚动到底部
+                                            elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+                                        }
                                     }
                                 }
+                            } else {
+                                // 如果JSON不完整，记录但不抛出错误
+                                console.warn("收到不完整的JSON数据，跳过此块:", jsonStr);
                             }
                         } catch (e) {
-                            console.error("解析流式数据失败:", e, line);
+                            console.error("解析流式数据失败:", e, "数据:", jsonStr);
+                            // 不中断流程，继续处理下一块数据
                         }
                     }
                 }
+            }
+
+            // 处理可能剩余在缓冲区的JSON数据
+            if (jsonBuffer && jsonBuffer.endsWith('}')) {
+                try {
+                    const data = JSON.parse(jsonBuffer);
+                    if (data.choices && data.choices.length > 0 && data.choices[0].delta && data.choices[0].delta.content) {
+                        const content = data.choices[0].delta.content;
+                        fullContent += content;
+                        if (contentElement) {
+                            renderMarkdown(contentElement, fullContent);
+                            elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("处理剩余缓冲区数据失败:", e);
+                }
+                jsonBuffer = "";
             }
 
             // 确保最后的内容被渲染
@@ -284,6 +324,8 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             // 如果有knowledge数据，添加到消息中
             if (knowledgeData) {
                 newMessage.knowledge_data = knowledgeData;
+                // 使用JSON.stringify确保完整输出大型对象
+                console.log('获取字符串格式的knowledge_data: ',JSON.stringify(newMessage.knowledge_data, null, 2),newMessage);
             }
 
             currentConversation.messages.push(newMessage);

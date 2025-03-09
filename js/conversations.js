@@ -1,7 +1,7 @@
 import { elements, clearChatContainer, setWelcomeMessage, renderMarkdown } from './ui.js';
 import { appendMessage } from './messaging.js';
-import { fetchChatHistory, deleteChatById, generateId, fetchChatList } from './api.js';
-import { modeConfig } from './config.js';
+import { fetchChatHistory, deleteChatById, generateId, fetchChatList, sendChatCompletion } from './api.js';
+import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
 import { getCurrentMode } from './modes.js';
 
 // 会话数据存储
@@ -123,6 +123,41 @@ export function renderConversationList() {
 
 // 切换会话
 export async function switchConversation(id) {
+    // 保存当前会话状态到后端
+    if (currentConversationId) {
+        const currentConv = getConversationById(currentConversationId);
+        if (currentConv && currentConv.messages && currentConv.messages.length > 0) {
+            try {
+                // 准备发送到后端的消息数据
+                const simplifiedMessages = currentConv.messages.map(msg => ({
+                    content: msg.content,
+                    role: msg.role,
+                    // 保留knowledge_data字段，如果存在的话
+                    ...(msg.knowledge_data ? { knowledge_data: msg.knowledge_data } : {})
+                }));
+                
+                // 处理 assistant 的 content
+                const updatedMessages = simplifiedMessages.map(msg => {
+                    if (msg.role === 'assistant') {
+                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
+                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                    }
+                    return msg;
+                });
+                
+                // 调用API保存当前会话
+                await sendChatCompletion(
+                    currentConversationId,
+                    updatedMessages,
+                    currentConv.mode || 'default'
+                );
+                console.log('当前会话已保存到后端');
+            } catch (error) {
+                console.error('保存当前会话失败:', error);
+            }
+        }
+    }
+
     // 更新当前会话ID
     currentConversationId = id;
     renderConversationList();
@@ -132,6 +167,16 @@ export async function switchConversation(id) {
 
     // 重置 newmessages 数组
     newmessages = [];
+
+    // 获取当前会话对象
+    const currentConversation = getConversationById(id);
+    if (!currentConversation) {
+        console.error('找不到会话:', id);
+        return;
+    }
+
+    // 清空当前会话的消息数组，准备重新加载
+    currentConversation.messages = [];
 
     try {
         // 发起API请求获取会话历史
@@ -146,24 +191,41 @@ export async function switchConversation(id) {
             const currentMode = getCurrentMode();
             const selectedMode = modeConfig[currentMode] || modeConfig['default'];
             const welcomeMessage = selectedMode.welcomeMessage;
+            
             // 显示欢迎消息
             appendMessage('assistant', welcomeMessage, 'first-message');
             console.log('Welcome message appended:', welcomeMessage);
-            //TODO
+            
+            // 添加欢迎消息到当前会话的消息数组
+            currentConversation.messages.push({
+                role: 'assistant',
+                content: welcomeMessage,
+                id: 'first-message'
+            });
         } else {
-            // 如果有历史消息，则显示
+            // 如果有历史消息，则显示并添加到当前会话的消息数组
             messagesHistory.forEach(msg => {
                 const messageId = msg.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
                 
                 // 处理 <a> 标签
-                if (msg.content.includes("<think>")) {
-                    msg.content = msg.content.replace(/<think>/g, "```");
+                let processedContent = msg.content;
+                if (processedContent.includes("<think>")) {
+                    processedContent = processedContent.replace(/<think>/g, "```思考过程");
                 }
-                if (msg.content.includes("</think>")) {
-                    msg.content = msg.content.replace(/<\/think>/g, "```");
+                if (processedContent.includes("</think>")) {
+                    processedContent = processedContent.replace(/<\/think>/g, "```");
                 }
 
-                appendMessage(msg.role, msg.content, messageId);
+                // 显示消息
+                appendMessage(msg.role, processedContent, messageId);
+                
+                // 添加消息到当前会话的消息数组
+                currentConversation.messages.push({
+                    role: msg.role,
+                    content: processedContent,
+                    id: messageId,
+                    knowledge_data: msg.knowledge_data || null
+                });
             });
 
             // 如果返回数据有标题，则更新会话标题
@@ -171,6 +233,10 @@ export async function switchConversation(id) {
                 updateConversationTitle(id, data.messages.title);
             }
         }
+        
+        // 更新会话对象
+        updateConversation(currentConversation);
+        console.log('会话历史已加载并更新到当前会话对象:', currentConversation);
     } catch (error) {
         console.error('获取会话历史失败:', error);
         appendMessage('assistant', '获取会话历史失败，请稍后再试。');
@@ -198,6 +264,39 @@ export async function deleteConversation(id) {
     if (conversations.length <= 1) {
         alert('至少需要保留一个对话');
         return;
+    }
+
+    // 如果要删除的不是当前会话，先保存当前会话状态到后端
+    if (id !== currentConversationId) {
+        const currentConv = getConversationById(currentConversationId);
+        if (currentConv && currentConv.messages && currentConv.messages.length > 0) {
+            try {
+                // 准备发送到后端的消息数据
+                const simplifiedMessages = currentConv.messages.map(msg => ({
+                    content: msg.content,
+                    role: msg.role
+                }));
+                
+                // 处理 assistant 的 content
+                const updatedMessages = simplifiedMessages.map(msg => {
+                    if (msg.role === 'assistant') {
+                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
+                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                    }
+                    return msg;
+                });
+                
+                // 调用API保存当前会话
+                await sendChatCompletion(
+                    currentConversationId,
+                    updatedMessages,
+                    currentConv.mode || 'default'
+                );
+                console.log('当前会话已保存到后端');
+            } catch (error) {
+                console.error('保存当前会话失败:', error);
+            }
+        }
     }
 
     try {
@@ -238,6 +337,42 @@ export async function deleteConversation(id) {
 // 创建新会话
 export async function startNewConversation(currentMode) {
     console.log('Starting new conversation in mode:', currentMode);
+    
+    // 保存当前会话状态到后端
+    if (currentConversationId) {
+        const currentConv = getConversationById(currentConversationId);
+        if (currentConv && currentConv.messages && currentConv.messages.length > 0) {
+            try {
+                // 准备发送到后端的消息数据
+                const simplifiedMessages = currentConv.messages.map(msg => ({
+                    content: msg.content,
+                    role: msg.role,
+                    // 保留knowledge_data字段，如果存在的话
+                    ...(msg.knowledge_data ? { knowledge_data: msg.knowledge_data } : {})
+                }));
+                
+                // 处理 assistant 的 content
+                const updatedMessages = simplifiedMessages.map(msg => {
+                    if (msg.role === 'assistant') {
+                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
+                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                    }
+                    return msg;
+                });
+                
+                // 调用API保存当前会话
+                await sendChatCompletion(
+                    currentConversationId,
+                    updatedMessages,
+                    currentConv.mode || 'default'
+                );
+                console.log('当前会话已保存到后端');
+            } catch (error) {
+                console.error('保存当前会话失败:', error);
+            }
+        }
+    }
+    
     // 生成新ID
     const newId = await generateId();
     
@@ -245,12 +380,19 @@ export async function startNewConversation(currentMode) {
     const selectedMode = modeConfig[currentMode] || modeConfig['default'];
     const welcomeMessage = selectedMode.welcomeMessage;
 
+    // 创建欢迎消息ID
+    const welcomeMessageId = 'first-message';
+
     // 创建新对话
     conversations.unshift({
         id: newId,
         title: '新对话',
         mode: currentMode,
-        messages: []
+        messages: [{
+            role: 'assistant',
+            content: welcomeMessage,
+            id: welcomeMessageId
+        }]
     });
 
     currentConversationId = newId;
@@ -258,7 +400,7 @@ export async function startNewConversation(currentMode) {
     clearChatContainer();
 
     // 显示欢迎消息
-    appendMessage('assistant', welcomeMessage, 'first-message');
+    appendMessage('assistant', welcomeMessage, welcomeMessageId);
     console.log('Welcome message appended:', welcomeMessage);
 
     // 重置 newmessages 数组
@@ -283,8 +425,8 @@ export async function initializeConversations() {
                 conversations.push({
                     id: chatInfo.chat_id,
                     title: chatInfo.title || '未命名对话',
-                    mode: 'general', // 默认设置为通用模式
-                    messages: []
+                    mode: chatInfo.mode || 'general', // 默认设置为通用模式
+                    messages: [] // 初始化为空数组，稍后会加载完整历史
                 });
             }
         }
@@ -307,6 +449,11 @@ export async function initializeConversations() {
         // 渲染对话列表
         renderConversationList();
         
+        // 加载当前会话的完整历史
+        if (currentConversationId) {
+            await switchConversation(currentConversationId);
+        }
+        
         return currentConversationId;
     } catch (error) {
         console.error('加载对话历史失败:', error);
@@ -323,4 +470,96 @@ export async function initializeConversations() {
         
         return currentConversationId;
     }
-} 
+}
+
+// 保存当前会话状态到后端
+export async function saveCurrentConversation() {
+    if (!currentConversationId) return;
+    
+    const currentConv = getConversationById(currentConversationId);
+    if (!currentConv || !currentConv.messages || currentConv.messages.length === 0) return;
+    
+    try {
+        // 准备发送到后端的消息数据
+        const simplifiedMessages = currentConv.messages.map(msg => ({
+            content: msg.content,
+            role: msg.role,
+            // 保留knowledge_data字段，如果存在的话
+            ...(msg.knowledge_data ? { knowledge_data: msg.knowledge_data } : {})
+        }));
+        
+        // 处理 assistant 的 content
+        const updatedMessages = simplifiedMessages.map(msg => {
+            if (msg.role === 'assistant') {
+                // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
+                msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+            }
+            return msg;
+        });
+        
+        // 调用API保存当前会话
+        await sendChatCompletion(
+            currentConversationId,
+            updatedMessages,
+            currentConv.mode || 'default'
+        );
+        console.log('当前会话已保存到后端');
+        return true;
+    } catch (error) {
+        console.error('保存当前会话失败:', error);
+        return false;
+    }
+}
+
+// 在页面关闭或刷新前保存当前会话
+window.addEventListener('beforeunload', (event) => {
+    // 由于beforeunload不能等待异步操作，我们只能发送同步请求
+    // 或者使用navigator.sendBeacon API
+    if (currentConversationId) {
+        const currentConv = getConversationById(currentConversationId);
+        if (currentConv && currentConv.messages && currentConv.messages.length > 0) {
+            try {
+                // 准备发送到后端的消息数据
+                const simplifiedMessages = currentConv.messages.map(msg => ({
+                    content: msg.content,
+                    role: msg.role,
+                    // 保留knowledge_data字段，如果存在的话
+                    ...(msg.knowledge_data ? { knowledge_data: msg.knowledge_data } : {})
+                }));
+                
+                // 处理 assistant 的 content
+                const updatedMessages = simplifiedMessages.map(msg => {
+                    if (msg.role === 'assistant') {
+                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
+                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                    }
+                    return msg;
+                });
+                
+                // 使用navigator.sendBeacon发送数据
+                const requestData = {
+                    model: currentConv.mode === 'medical' ? QW_MODEL : R1_MODEL,
+                    messages: updatedMessages,
+                    max_tokens: 10240,
+                    temperature: 0,
+                    stream: true,
+                    chat_id: currentConversationId,
+                    department: modeConfig[currentConv.mode]?.department,
+                    kb_category: modeConfig[currentConv.mode]?.kb_category
+                };
+                
+                const API_BASE_URL = window.API_BASE_URL || '';
+                const API_AUTH_TOKEN = window.API_AUTH_TOKEN || '';
+                
+                navigator.sendBeacon(
+                    `${API_BASE_URL}v1/chat/completions`, 
+                    new Blob([JSON.stringify(requestData)], {type: 'application/json'})
+                );
+                
+                console.log('已尝试在页面关闭前保存会话');
+            } catch (error) {
+                console.error('页面关闭前保存会话失败:', error);
+            }
+        }
+    }
+}); 

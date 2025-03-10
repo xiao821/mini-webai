@@ -520,6 +520,10 @@ export async function saveCurrentConversation() {
 }
 
 // 在页面关闭或刷新前保存当前会话
+// sendBeacon()方法设计用于在页面卸载时发送数据，它会在后台异步发送请求，不会阻塞页面卸载过程
+// 浏览器会保证这些请求会被发送，即使页面已经关闭
+// 它使用POST方法发送数据，适合发送较大的数据量
+// 不需要等待服务器响应，非常适合"发送并忘记"的场景
 window.addEventListener('beforeunload', (event) => {
     // 由于beforeunload不能等待异步操作，我们只能发送同步请求
     // 或者使用navigator.sendBeacon API

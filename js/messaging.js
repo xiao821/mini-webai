@@ -189,7 +189,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             let think_status = 0;
             let firstCharacterRendered = false;
             let currentEvent = null;
-            let knowledgeData = null;
+            let knowledgeData = [];  // 修改为数组，用于存储多个knowledge事件的数据
             let jsonBuffer = ""; // 添加JSON缓冲区
 
             // 通过reader.read()处理流式响应
@@ -218,7 +218,16 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                         // 处理knowledge事件数据
                         if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
                             console.log("收到 knowledge 数据块:", jsonStr);
-                            knowledgeData = jsonStr;  // 直接存储原始数据
+                            try {
+                                // 尝试解析JSON字符串
+                                const knowledgeItem = JSON.parse(jsonStr);
+                                // 将解析后的对象添加到knowledgeData数组中
+                                knowledgeData.push(knowledgeItem);
+                            } catch (e) {
+                                console.error("解析knowledge数据失败:", e, "数据:", jsonStr);
+                                // 如果解析失败，仍然将原始字符串添加到数组中
+                                knowledgeData.push(jsonStr);
+                            }
                             continue;
                         }
 
@@ -323,10 +332,11 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             };
 
             // 如果有knowledge数据，添加到消息中
-            if (knowledgeData) {
-                newMessage.knowledge_data = knowledgeData;
+            if (knowledgeData.length > 0) {
+                // 将knowledgeData数组转换为JSON字符串
+                newMessage.knowledge_data = JSON.stringify(knowledgeData);
                 // 使用JSON.stringify确保完整输出大型对象
-                console.log('获取字符串格式的knowledge_data: ',JSON.stringify(newMessage.knowledge_data, null, 2),newMessage);
+                console.log('获取字符串格式的knowledge_data: ', JSON.stringify(knowledgeData, null, 2), newMessage);
             }
 
             currentConversation.messages.push(newMessage);

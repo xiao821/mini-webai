@@ -20,15 +20,19 @@ export async function handleFeedback(messageId, type) {
     // 从会话历史中获取消息内容
     messageContent = currentConversation.messages.find(msg => msg.id === messageId)?.content;
     let kb_reference = currentConversation.messages.find(msg => msg.id === messageId)?.knowledge_data;
-    console.log('字符串 kb_reference', kb_reference,currentConversation);
+    console.log('字符串 kb_reference', kb_reference, currentConversation);
+    
     // 检查 kb_reference 是否是字符串，并尝试解析为数组
     if (typeof kb_reference === 'string') {
       try {
         re_kb_reference = JSON.parse(kb_reference); // 将字符串解析为数组
-        console.log('re_kb_reference', messageId,re_kb_reference);    
+        console.log('re_kb_reference', messageId, re_kb_reference);    
       } catch (error) {
         console.error('Failed to parse kb_reference:', error);
+        re_kb_reference = null; // 解析失败时设置为null
       }
+    } else {
+      re_kb_reference = kb_reference; // 如果不是字符串，直接使用
     }
     
     if (type === 'like') {
@@ -41,7 +45,7 @@ export async function handleFeedback(messageId, type) {
             timer: 1500
         });
     } else if (type === 'dislike') {
-        console.log('点踩 re_kb_reference', messageId,re_kb_reference);    
+        console.log('点踩 re_kb_reference', messageId, re_kb_reference);    
 
         // 显示反馈弹窗
         feedbackMessageId = messageId;

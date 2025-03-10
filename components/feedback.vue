@@ -592,19 +592,19 @@ module.exports = {
                     params.end_time = this.filterForm.dateRange[1];
                 }
 
-                // const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
-                //     headers: {
-                //         'Authorization': API_AUTH_TOKEN
-                //     },
-                //     params: params
-                // });
-                const response = await axios.get('http://172.16.99.32:1032/api/feedback/getDataByPage/?pagenum=1&pagesize=10',{
+                const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
                     headers: {
                         'Authorization': API_AUTH_TOKEN
-                    }
-                })
+                    },
+                    params: params
+                });
+                // const response = await axios.get('http://172.16.99.32:1032/api/feedback/getDataByPage/?pagenum=1&pagesize=10',{
+                //     headers: {
+                //         'Authorization': API_AUTH_TOKEN
+                //     }
+                // })
                 
-                console.log('response',response.data.feedback_list)
+                // console.log('response',response.data.feedback_list)
                 // 获取总条数
                 // if (response.data.feedback_list && response.data.feedback_list.length > 0) {
                     this.total = response.data.total;

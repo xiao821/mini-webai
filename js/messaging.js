@@ -4,7 +4,7 @@ import { getConversationById, updateConversation } from './conversations.js';
 import { handleFeedback } from './feedback.js';
 
 // 添加消息到UI
-export function appendMessage(role, content, messageId = null) {
+export function appendMessage(role, content, messageId = null, lazyLoad = false) {
     const { chatContainer } = elements;
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex items-start';
@@ -32,7 +32,7 @@ export function appendMessage(role, content, messageId = null) {
                 ${avatarText}
             </div>
             <div class="message-container bg-white p-4 rounded-lg shadow-sm border border-gray-200 max-w-3xl flex flex-col">
-                <div class="markdown-content"></div>
+                <div class="markdown-content ${lazyLoad ? 'lazy-content' : ''}"></div>
                 ${isUser ? `
                     <div class="flex items-center justify-end mt-2 text-gray-400">
                         <button class="copy-message-btn hover:text-blue-500 p-1 rounded" data-message="${content}">
@@ -64,9 +64,32 @@ export function appendMessage(role, content, messageId = null) {
     messageDiv.innerHTML = messageContent;
     chatContainer.appendChild(messageDiv);
 
-    // 渲染Markdown内容
     const markdownContent = messageDiv.querySelector('.markdown-content');
-    renderMarkdown(markdownContent, content);
+    
+    // 如果是延迟加载的消息，则存储内容但不立即渲染
+    if (lazyLoad) {
+        markdownContent.setAttribute('data-content', content);
+        // 添加占位符
+        markdownContent.innerHTML = '<div class="h-4 w-full bg-gray-100 animate-pulse rounded"></div>';
+        
+        // 使用Intersection Observer监听元素是否进入视口
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const element = entry.target;
+                    const content = element.getAttribute('data-content');
+                    renderMarkdown(element, content);
+                    element.classList.remove('lazy-content');
+                    observer.unobserve(element);
+                }
+            });
+        }, { rootMargin: '100px' });
+        
+        observer.observe(markdownContent);
+    } else {
+        // 立即渲染Markdown内容
+        renderMarkdown(markdownContent, content);
+    }
 
     // 为AI消息添加反馈按钮事件
     if (!isUser && role !== 'system' && messageId) {
@@ -87,7 +110,6 @@ export function appendMessage(role, content, messageId = null) {
         const copyBtn = messageDiv.querySelector('.copy-message-btn');
         if (copyBtn) {
             copyBtn.addEventListener('click', function() {
-
                 const messageContent = this.getAttribute('data-message');
                 const messageInput = document.getElementById('message-input');
                 messageInput.value = messageContent; // 使用 value 属性
@@ -128,8 +150,8 @@ export async function sendMessage(message, currentConversationId, currentMode, i
     // 为用户消息创建ID
     const userMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-    // 添加用户消息到UI
-    appendMessage('user', message, userMessageId);
+    // 添加用户消息到UI - 新消息不使用延迟加载
+    appendMessage('user', message, userMessageId, false);
 
     // 添加用户消息到会话
     currentConversation.messages.push({

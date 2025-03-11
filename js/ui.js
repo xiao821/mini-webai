@@ -210,3 +210,45 @@ export function createEmptyAssistantMessage(messageId) {
 //         };
 //     }
 // }
+
+// 初始化延迟加载功能
+export function initializeLazyLoading() {
+    const { chatContainer } = elements;
+    
+    // 创建一个全局的 Intersection Observer
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const element = entry.target;
+                if (element.classList.contains('lazy-content')) {
+                    const content = element.getAttribute('data-content');
+                    if (content) {
+                        renderMarkdown(element, content);
+                        element.classList.remove('lazy-content');
+                        observer.unobserve(element);
+                    }
+                }
+            }
+        });
+    }, { 
+        root: chatContainer,
+        rootMargin: '100px 0px',
+        threshold: 0.1
+    });
+    
+    // 监听聊天容器的滚动事件，动态观察新添加的延迟加载元素
+    chatContainer.addEventListener('scroll', () => {
+        const lazyElements = document.querySelectorAll('.lazy-content');
+        lazyElements.forEach(element => {
+            observer.observe(element);
+        });
+    });
+    
+    // 初始观察所有延迟加载元素
+    const lazyElements = document.querySelectorAll('.lazy-content');
+    lazyElements.forEach(element => {
+        observer.observe(element);
+    });
+    
+    return observer;
+}

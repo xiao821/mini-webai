@@ -211,7 +211,10 @@ export async function switchConversation(id) {
             });
         } else {
             // 如果有历史消息，则显示并添加到当前会话的消息数组
-            messagesHistory.forEach(msg => {
+            // 定义一次性渲染的消息数量
+            const INITIAL_RENDER_COUNT = 3;
+            
+            messagesHistory.forEach((msg, index) => {
                 const messageId = msg.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
                 
                 // 处理 <a> 标签
@@ -223,8 +226,13 @@ export async function switchConversation(id) {
                     processedContent = processedContent.replace(/<\/think>/g, "```");
                 }
 
-                // 显示消息
-                appendMessage(msg.role, processedContent, messageId);
+                // 判断是否需要延迟加载
+                // 最新的三条消息立即渲染，其余的延迟加载
+                const shouldLazyLoad = messagesHistory.length > INITIAL_RENDER_COUNT && 
+                                      index < messagesHistory.length - INITIAL_RENDER_COUNT;
+                
+                // 显示消息，根据条件决定是否延迟加载
+                appendMessage(msg.role, processedContent, messageId, shouldLazyLoad);
                 
                 // 添加消息到当前会话的消息数组
                 currentConversation.messages.push({

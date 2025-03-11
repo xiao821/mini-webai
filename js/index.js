@@ -1,4 +1,4 @@
-import { elements, initializeElements, adjustTextareaHeight, setWelcomeMessage } from './ui.js';
+import { elements, initializeElements, adjustTextareaHeight, setWelcomeMessage, initializeLazyLoading } from './ui.js';
 import { sendMessage } from './messaging.js';
 import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
@@ -12,6 +12,8 @@ let isWaitingForResponse = false;
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
+// 全局 Intersection Observer 实例
+let lazyLoadObserver;
 
 // 当DOM加载完成后
 document.addEventListener('DOMContentLoaded', function () {
@@ -31,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 初始化知识分类
     initKnowledgeCategory();
+
+    // 初始化延迟加载功能
+    lazyLoadObserver = initializeLazyLoading();
 
     // 初始加载默认模式欢迎信息
     // setWelcomeMessage('default');

@@ -243,12 +243,14 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                             try {
                                 // 尝试解析JSON字符串
                                 const knowledgeItem = JSON.parse(jsonStr);
-                                // 将解析后的对象添加到knowledgeData数组中
-                                knowledgeData.push(knowledgeItem);
+                                // 如果 knowledgeItem 是数组，展开它；如果是单个对象，直接添加
+                                if (Array.isArray(knowledgeItem)) {
+                                    knowledgeData.push(...knowledgeItem);
+                                } else {
+                                    knowledgeData.push(knowledgeItem);
+                                }
                             } catch (e) {
                                 console.error("解析knowledge数据失败:", e, "数据:", jsonStr);
-                                // 如果解析失败，仍然将原始字符串添加到数组中
-                                knowledgeData.push(jsonStr);
                             }
                             continue;
                         }
@@ -355,10 +357,10 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
             // 如果有knowledge数据，添加到消息中
             if (knowledgeData.length > 0) {
-                // 将knowledgeData数组转换为JSON字符串
-                newMessage.knowledge_data = JSON.stringify(knowledgeData);
-                // 使用JSON.stringify确保完整输出大型对象
-                console.log('获取字符串格式的knowledge_data: ', JSON.stringify(knowledgeData, null, 2), newMessage);
+                // 直接将数组赋值，不进行JSON.stringify
+                newMessage.knowledge_data = knowledgeData;
+                // 使用JSON.stringify仅用于日志输出
+                console.log('获取knowledge_data: ', JSON.stringify(knowledgeData, null, 2), newMessage);
             }
 
             currentConversation.messages.push(newMessage);

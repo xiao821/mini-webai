@@ -330,6 +330,12 @@
                         </el-collapse>
                     </div>
                     
+                    <!-- 添加AI生成的回答区域 -->
+                    <div v-if="generatedAnswer" class="generated-answer-section">
+                        <el-divider>AI生成的回答</el-divider>
+                        <div class="generated-answer-content" v-html="renderedGeneratedAnswer"></div>
+                    </div>
+                    
                     <el-divider>原始引用的知识点</el-divider>
                     
                     <!-- 已引用的知识点 -->
@@ -403,24 +409,13 @@
                         <i class="el-icon-document"></i>
                         <p>请从左侧选择知识点查看详情</p>
                     </div>
-                    
-                    <!-- <el-divider>重新生成AI回答</el-divider>
-                    
-                    <div class="regenerate-answer-section">
-                        <el-button type="primary" @click="regenerateAIAnswer" :disabled="selectedKnowledgeNodes.length === 0">
-                            根据选择的知识点重新生成回答
-                        </el-button>
-                        <div v-if="regeneratedAnswer" class="regenerated-answer">
-                            <h4>重新生成的回答：</h4>
-                            <div class="regenerated-content" v-html="renderedRegeneratedAnswer"></div>
-                        </div>
-                    </div> -->
                 </div>
             </div>
             <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="knowledgeDialogVisible = false">取消</el-button>
                     <el-button type="primary" @click="submitSelectedKnowledge">确认提交</el-button>
+                    <el-button type="success" @click="generateAIAnswer" :disabled="!canGenerateAnswer">AI生成回答</el-button>
                 </span>
             </template>
         </el-dialog>
@@ -534,7 +529,18 @@ module.exports = {
             // 处理详情弹窗
             processingDialogVisible: false,
             // 当前处理中的反馈项
-            currentProcessingFeedback: null
+            currentProcessingFeedback: null,
+            // 添加新的数据属性
+            isGeneratingAnswer: false,
+            generatedAnswer: '',
+            renderedGeneratedAnswer: '',
+        }
+    },
+    computed: {
+        // 添加新的计算属性
+        canGenerateAnswer() {
+            const totalKnowledgeCount = this.originalKnowledgeNodes.length + this.selectedKnowledgeNodes.length;
+            return totalKnowledgeCount > 0 && totalKnowledgeCount <= 5;
         }
     },
     watch: {
@@ -1000,6 +1006,8 @@ module.exports = {
             this.regeneratedAnswer = '';
             this.renderedRegeneratedAnswer = '';
             this.renderedKnowledgeAIAnswer = '';
+            this.generatedAnswer = ''; // 清空生成的回答
+            this.renderedGeneratedAnswer = ''; // 清空渲染后的回答
         },
         
         // 移除已选择的知识点
@@ -1129,9 +1137,16 @@ module.exports = {
         },
         // 处理预览节点变化
         handlePreviewNodeCheckChange(node) {
+            const totalKnowledgeCount = this.originalKnowledgeNodes.length + this.selectedKnowledgeNodes.length;
+            
             if (node.isSelected) {
+                if (totalKnowledgeCount >= 5) {
+                    this.$message.warning('知识点总数不能超过5个');
+                    node.isSelected = false;
+                    return;
+                }
+                
                 // 添加到已选择列表
-                // 确保使用正确的id进行比较，处理可能的undefined情况
                 const nodeId = node.id || '';
                 const exists = this.selectedKnowledgeNodes.some(item => {
                     const itemId = item.id || '';
@@ -1139,7 +1154,6 @@ module.exports = {
                 });
                 
                 if (!exists) {
-                    // 确保添加的节点包含所有必要的属性，并为undefined的属性提供默认值
                     this.selectedKnowledgeNodes.push({
                         id: node.id || `temp-id-${Date.now()}`,
                         label: node.label || '未命名知识点',
@@ -1148,11 +1162,6 @@ module.exports = {
                         type: node.type || 'item'
                     });
                 }
-                console.log('已添加节点:', {
-                    id: node.id,
-                    kgid: node.kgid,
-                    label: node.label
-                });
             } else {
                 // 从已选择列表中移除
                 const nodeId = node.id || '';
@@ -1163,11 +1172,6 @@ module.exports = {
                 
                 if (index !== -1) {
                     this.selectedKnowledgeNodes.splice(index, 1);
-                    console.log('已移除节点:', {
-                        id: node.id,
-                        kgid: node.kgid,
-                        label: node.label
-                    });
                 }
             }
         },
@@ -1246,6 +1250,12 @@ module.exports = {
         },
         // 移除原始引用的知识点
         removeOriginalKnowledge(item) {
+            const totalKnowledgeCount = this.originalKnowledgeNodes.length + this.selectedKnowledgeNodes.length;
+            if (totalKnowledgeCount <= 1) {
+                this.$message.warning('至少需要保留一个知识点');
+                return;
+            }
+            
             const index = this.originalKnowledgeNodes.findIndex(node => node.kb_id === item.kb_id);
             if (index !== -1) {
                 this.originalKnowledgeNodes.splice(index, 1);
@@ -1258,69 +1268,84 @@ module.exports = {
         },
         
         // 重新生成AI回答
-        async regenerateAIAnswer() {
-            if (this.selectedKnowledgeNodes.length === 0) {
-                this.$message.warning('请至少选择一个知识点');
-                return;
-            }
-            
+        async generateAIAnswer() {
             if (!this.currentFeedbackForKnowledge || !this.currentFeedbackForKnowledge.user_question) {
                 this.$message.warning('无法获取用户问题');
                 return;
             }
-            
-            this.$message.info('正在生成回答，请稍候...');
-            
-            try {
-                // 这里应该调用后端API来重新生成回答
-                // 由于没有实际的API，这里模拟一个回答
-                
-                // 模拟API调用延迟
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // 模拟生成的回答
-                const knowledgePoints = this.selectedKnowledgeNodes.map(node => node.content).join('\n\n');
-                this.regeneratedAnswer = `根据您的问题"${this.currentFeedbackForKnowledge.user_question}"，我找到了以下信息：\n\n${knowledgePoints}\n\n希望这些信息对您有所帮助！`;
-                
-                // 渲染Markdown
-                if (this.md) {
-                    try {
-                        this.renderedRegeneratedAnswer = this.md.render(this.regeneratedAnswer);
-                    } catch (error) {
-                        console.error('Markdown渲染失败:', error);
-                        this.renderedRegeneratedAnswer = this.regeneratedAnswer;
-                    }
-                } else {
-                    this.renderedRegeneratedAnswer = this.regeneratedAnswer;
-                }
-                
-                this.$message.success('回答生成成功');
-                
-            } catch (error) {
-                console.error('生成回答失败:', error);
-                this.$message.error('生成回答失败: ' + error.message);
+
+            const totalKnowledgeCount = this.originalKnowledgeNodes.length + this.selectedKnowledgeNodes.length;
+            if (totalKnowledgeCount === 0) {
+                this.$message.warning('请至少选择一个知识点');
+                return;
             }
-        },
-        // 添加新的方法来获取知识点内容
-        async fetchKnowledgeContent(kgids) {
+            if (totalKnowledgeCount > 5) {
+                this.$message.warning('知识点总数不能超过5个');
+                return;
+            }
+
+            this.isGeneratingAnswer = true;
+            this.$message.info('正在生成回答，请稍候...');
+
             try {
-                const response = await axios.post(`${baseUrl}/api/feedbackKnow_Cnt`, kgids, {
+                // 构建知识点数据
+                const knowledgeData = {
+                    original_knowledge: this.originalKnowledgeNodes.map(item => ({
+                        kgid: item.kb_id,
+                        title: item.kb_title,
+                        content: item.kb_content
+                    })),
+                    new_knowledge: this.selectedKnowledgeNodes.map(item => ({
+                        kgid: item.kgid,
+                        title: item.label,
+                        content: item.content
+                    }))
+                };
+
+                // 构建请求数据
+                const requestData = {
+                    user_question: this.currentFeedbackForKnowledge.user_question,
+                    knowledge_list: [...knowledgeData.original_knowledge, ...knowledgeData.new_knowledge]
+                };
+
+                // 调用后端API
+                const response = await axios.post(`${baseUrl}/api/feedback/generateAnswer`, requestData, {
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
                         'Content-Type': 'application/json'
                     }
                 });
-                
-                if (response.data && response.data.feedback_list) {
-                    return response.data.feedback_list;
+
+                if (response.data && response.data.answer) {
+                    this.generatedAnswer = response.data.answer;
+                    
+                    // 渲染Markdown
+                    if (this.md) {
+                        try {
+                            this.renderedGeneratedAnswer = this.md.render(this.generatedAnswer);
+                        } catch (error) {
+                            console.error('Markdown渲染失败:', error);
+                            this.renderedGeneratedAnswer = this.generatedAnswer;
+                        }
+                    } else {
+                        this.renderedGeneratedAnswer = this.generatedAnswer;
+                    }
+
+                    this.$message.success('回答生成成功');
+                    
+                    // 确保生成的回答区域可见
+                    this.qaCollapseActive = ['question', 'answer'];
+                } else {
+                    throw new Error('生成回答失败');
                 }
-                return [];
             } catch (error) {
-                console.error('获取知识点内容失败:', error);
-                this.$message.error('获取知识点内容失败');
-                return [];
+                console.error('生成回答失败:', error);
+                this.$message.error('生成回答失败: ' + error.message);
+            } finally {
+                this.isGeneratingAnswer = false;
             }
         },
+
         // 打开处理详情弹窗
         openProcessingDialog(row) {
             this.currentProcessingFeedback = {
@@ -1329,11 +1354,13 @@ module.exports = {
             };
             this.processingDialogVisible = true;
         },
+
         // 处理处理详情弹窗关闭
         handleProcessingDialogClose() {
             this.processingDialogVisible = false;
             this.currentProcessingFeedback = null;
         },
+
         // 保存处理详情
         async saveProcessingDetails() {
             if (!this.currentProcessingFeedback) {
@@ -1353,6 +1380,27 @@ module.exports = {
             } catch (error) {
                 console.error('提交处理意见失败:', error);
                 this.$message.error('提交处理意见失败: ' + error.message);
+            }
+        },
+
+        // 添加回获取知识点内容的方法
+        async fetchKnowledgeContent(kgids) {
+            try {
+                const response = await axios.post(`${baseUrl}/api/feedbackKnow_Cnt`, kgids, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.data && response.data.feedback_list) {
+                    return response.data.feedback_list;
+                }
+                return [];
+            } catch (error) {
+                console.error('获取知识点内容失败:', error);
+                this.$message.error('获取知识点内容失败');
+                return [];
             }
         },
     },
@@ -1765,22 +1813,23 @@ module.exports = {
 }
 
 /* 重新生成回答区域样式 */
-.regenerate-answer-section {
-    margin-top: 20px;
-}
-
-.regenerated-answer {
-    margin-top: 15px;
-    padding: 10px;
+.generated-answer-section {
+    margin: 15px 0;
+    padding: 15px;
     background-color: #f0f9eb;
     border-radius: 4px;
     border-left: 3px solid #67c23a;
 }
 
-.regenerated-content {
-    margin-top: 10px;
-    line-height: 1.5;
+.generated-answer-content {
+    line-height: 1.6;
     white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 /* 知识点卡片标题和复选框样式 */

@@ -100,6 +100,7 @@
                 ref="feedbackTable"
                 row-key="md_id">
                 <el-table-column prop="date" label="日期" width="180" sortable></el-table-column>
+                <el-table-column prop="user_id" label="用户ID" width="120"></el-table-column>
                 <el-table-column prop="feedback_type" label="反馈类型" width="120">
                     <template #default="scope">
                         <el-tag 
@@ -110,7 +111,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column prop="detail" label="反馈内容" show-overflow-tooltip></el-table-column>
-                <el-table-column prop="user_question" label="市民原始问题" show-overflow-tooltip></el-table-column>
+                <el-table-column prop="user_question" label="原始问题" show-overflow-tooltip></el-table-column>
                 <el-table-column prop="ai_answer" label="AI回答" show-overflow-tooltip>
                     <template #default="scope">
                         <div class="table-cell-content">{{ scope.row.ai_answer }}</div>
@@ -204,6 +205,10 @@
                     <el-tag size="small" :type="getCategoryTag(currentFeedback.feedback_type)">
                         {{ currentFeedback.feedback_type }}
                     </el-tag>
+                </div>
+                <div class="detail-item">
+                    <label>用户ID：</label>
+                    <span>{{ currentFeedback.user_id }}</span>
                 </div>
                 <div class="detail-item">
                     <label>用户问题：</label>
@@ -1469,12 +1474,13 @@ module.exports = {
         // 查看引用知识点详情
         async viewKbReference(row) {
             this.currentFeedback = row;
-            // console.log('知识点row', row);
+            console.log('知识点row', row,row.department);
             
             if (row.kb_reference && Array.isArray(row.kb_reference)) {
-                // 提取所有的 kb_id
-                const kgids = row.kb_reference.map(item => item.kb_id);
-                
+                if (this.selectedDepartment === '龙岗政数局') {
+                    // 提取所有的 kb_id
+                    const kgids = row.kb_reference.map(item => item.kb_id);
+                    
                 // 获取知识点内容
                 const knowledgeContent = await this.fetchKnowledgeContent(kgids);
                 
@@ -1491,9 +1497,32 @@ module.exports = {
                 
                 // 更新当前反馈的知识点引用数据
                 this.currentFeedback = {
-                    ...row,
-                    kb_reference: mergedKbReference
-                };
+                        ...row,
+                        kb_reference: mergedKbReference
+                    };
+                } else {
+                    // 提取所有的 kgid
+                    const kgids = row.kb_reference.map(item => item.kgid);
+                    
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchLonggangKnowledgeContent(kgids);
+                    // 将获取到的内容与原始数据合并
+                    const mergedKbReference = row.kb_reference.map(ref => {
+                        const content = knowledgeContent.find((_, index) => index === row.kb_reference.indexOf(ref));
+                        return {
+                            kgid: ref.kgid,
+                            similarity: ref.similarity,
+                            kb_title: content ? content.title : '',
+                            kb_content: content ? content.content : ''
+                        };
+                    });
+                    
+                    // 更新当前反馈的知识点引用数据
+                    this.currentFeedback = {
+                        ...row,
+                        kb_reference: mergedKbReference
+                    };
+                }
             }
             
             this.kbReferenceDialogVisible = true;
@@ -1638,7 +1667,7 @@ module.exports = {
             }
         },
 
-        // 添加回获取知识点内容的方法
+        // 添加回医保获取知识点内容的方法
         async fetchKnowledgeContent(kgids) {
             try {
                 const response = await axios.post(`${baseUrl}/api/feedbackKnow_Cnt`, kgids, {
@@ -1654,10 +1683,30 @@ module.exports = {
                 return [];
             } catch (error) {
                 console.error('获取知识点内容失败:', error);
-                this.$message.error('获取知识点内容失败');
+                // this.$message.error('获取知识点内容失败');
                 return [];
             }
         },
+        // 添加获取龙岗知识点内容方法
+        async fetchLonggangKnowledgeContent(kgids) {
+            try {
+                const response = await axios.post(`${baseUrl}/api/feedbackLGKnow_Cnt`, { ids:kgids }, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.data && response.data.feedback_list) {
+                    return response.data.feedback_list;
+                }
+                return [];
+            } catch (error) {
+                console.error('获取知识点内容失败:', error);
+                // this.$message.error('获取知识点内容失败');
+                return [];
+            }
+        }
     },
     mounted() {
         this.getFeedbackTableData();

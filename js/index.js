@@ -3,7 +3,7 @@ import { sendMessage } from './messaging.js';
 import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
-import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
+import { modeConfig, QW_MODEL, R1_MODEL, USER_ID } from './config.js';
 import { record_voice } from './api.js';
 import { initKnowledgeCategory } from './knowledge_category.js';
 
@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // 设置登录时间
     setLoginTime();
 
+    // 设置用户名
+    setUserName();
+
     // 渲染模式按钮
     renderModeButtons();
 
@@ -49,6 +52,16 @@ function setLoginTime() {
         const now = new Date();
         const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
         loginTimeElement.textContent = timeString;
+    }
+}
+
+// 设置用户名
+function setUserName() {
+    const userNameElement = document.getElementById('user-name');
+    if (USER_ID) {
+        userNameElement.textContent = USER_ID.replace(/^id_/, "");
+    } else {
+        userNameElement.textContent = "测试用户";
     }
 }
 

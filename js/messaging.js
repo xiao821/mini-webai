@@ -324,6 +324,9 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                 }
             }
 
+            // 确保解码器刷新所有剩余内容
+            decoder.decode();
+            
             // 处理可能剩余在缓冲区的JSON数据
             if (jsonBuffer && jsonBuffer.endsWith('}')) {
                 try {
@@ -375,6 +378,13 @@ export async function sendMessage(message, currentConversationId, currentMode, i
         }
     } catch (error) {
         console.error('获取AI响应失败:', error);
+        
+        // 如果是AbortError且已经收到了响应，可以忽略这个错误
+        if (error.name === 'AbortError' && fullContent && fullContent.length > 0) {
+            console.log('流式响应已完成但连接被中断，这是预期行为');
+            return true;
+        }
+        
         removeTypingIndicator();
         appendMessage('system', '抱歉，发生了错误，请稍后再试。');
         return false;

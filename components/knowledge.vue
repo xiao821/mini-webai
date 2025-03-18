@@ -188,7 +188,7 @@ module.exports =  {
         return {
             // API 配置
             apiConfig: {
-                baseUrl: '/nlprag',
+                baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: 'http://172.16.99.32:1032',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
@@ -344,7 +344,7 @@ module.exports =  {
                         this.$nextTick(() => {
                             if (this.$refs.tree) {
                                 // 展开第一个分类
-                                this.$refs.tree.store.setExpandedKeys([this.knowledgeTree[0].id]);
+                                this.$refs.tree.store.nodesMap[this.knowledgeTree[0].id].expanded = true;
                             }
                         });
                     } else {

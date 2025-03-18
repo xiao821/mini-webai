@@ -188,7 +188,7 @@ module.exports =  {
         return {
             // API 配置
             apiConfig: {
-                baseUrl: 'https://lgdev.baicc.cc/',
+                baseUrl: '/nlprag',
                 // baseUrl: 'http://172.16.99.32:1032',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
@@ -313,9 +313,6 @@ module.exports =  {
                 });
                 
                 const apiUrl = `${this.apiConfig.baseUrl}api/query_kb_category?${params.toString()}`;
-                console.log('请求URL:', apiUrl);
-                
-                console.log('发送请求...');
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -324,8 +321,6 @@ module.exports =  {
                     }
                 });
                 
-                console.log('收到响应:', response.status, response.statusText);
-                
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('响应错误:', errorText);
@@ -333,9 +328,6 @@ module.exports =  {
                 }
                 
                 const data = await response.json();
-                console.log(`${this.selectedDepartment} 接收到的原始数据:`, JSON.stringify(data));
-                console.log(`${this.selectedDepartment} 接收到的数据类型:`, typeof data, Array.isArray(data));
-                
                 // 根据实际返回的数据格式处理
                 if (data) {
                     // 直接使用返回的数组数据

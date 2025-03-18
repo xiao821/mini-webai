@@ -264,7 +264,7 @@
                     border
                     row-key="kb_id">
                     <el-table-column prop="kb_id" label="知识点ID" width="100"></el-table-column>
-                    <el-table-column prop="kb_title" label="知识库标题"></el-table-column>
+                    <el-table-column prop="kb_title" label="知识库标题" show-overflow-tooltip></el-table-column>
                     <el-table-column prop="kb_content" label="知识库内容" show-overflow-tooltip>
                         <template #default="scope">
                             <div class="kb-content">{{ scope.row.kb_content }}</div>
@@ -463,9 +463,9 @@
 
 <script type="module">
 // const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
+// const baseUrl = '/nlprag/';
 const baseUrl = 'https://lgdev.baicc.cc/';
-// const baseUrl = 'https://lgdev.baicc.cc/';
-// const baseUrl = 'http://172.16.99.32:1032';
+// const baseUrl = 'http://172.16.99.32:1034';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
 module.exports = {
@@ -552,7 +552,11 @@ module.exports = {
             // 龙岗政数局知识点树
             lgznTreeData: [],
             // 市医保中心知识点树
-            yibaoTreeData: []
+            yibaoTreeData: [],
+            // 添加新的数据属性
+            streamResponse: '', // 用于存储流式响应的数据
+            isStreaming: false, // 用于标记是否正在接收流式数据
+            currentStreamChunk: '', // 用于存储当前的流式数据块
         }
     },
     computed: {
@@ -759,8 +763,14 @@ module.exports = {
             // 打开知识库弹窗
             this.currentFeedbackForKnowledge = {
                 ...row,
-                audit_status: row.audit_status || this.audit_status
+                audit_status: row.audit_status || this.audit_status,
+                // 保存model_name和user_question
+                model_name: row.model_name,
+                user_question: row.user_question,
+                conversation_messages: row.conversation_messages || []
             };
+            
+            console.log('当前行数据:', this.currentFeedbackForKnowledge);
             this.knowledgeDialogVisible = true;
             this.selectedKnowledgeNodes = [];
             this.regeneratedAnswer = '';
@@ -782,23 +792,47 @@ module.exports = {
             this.originalKnowledgeNodes = [];
             this.originalKnowledgeNodesBackup = [];
             
-            if (row.kb_reference && row.kb_reference.length > 0) {
+            // 检查是否有引用知识点
+            if (row.kb_reference && Array.isArray(row.kb_reference) && row.kb_reference.length > 0) {
+                console.log('获取到原始知识点引用:', row.kb_reference);
+                
                 // 提取所有的 kb_id
-                const kgids = row.kb_reference.map(item => item.kb_id);
+                const kbIds = row.kb_reference.map(item => item.kb_id);
+                console.log('知识点ID列表:', kbIds);
                 
-                // 获取知识点内容
-                const knowledgeContent = await this.fetchKnowledgeContent(kgids);
-                
-                // 转换kb_reference为知识点节点格式
-                this.originalKnowledgeNodes = row.kb_reference.map((item, index) => ({
-                    kb_id: item.kb_id,
-                    kb_title: knowledgeContent[index] ? knowledgeContent[index].title : '',
-                    kb_content: knowledgeContent[index] ? knowledgeContent[index].content : '',
-                    kb_simil: item.similarity
-                }));
-                
-                // 备份原始知识点，用于重置
-                this.originalKnowledgeNodesBackup = JSON.parse(JSON.stringify(this.originalKnowledgeNodes));
+                try {
+                    // 根据选择的部门获取知识点内容
+                    let knowledgeContent = [];
+                    
+                    if (this.selectedDepartment === '市医保中心') {
+                        knowledgeContent = await this.fetchKnowledgeContent(kbIds);
+                    } else {
+                        knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
+                    }
+                    
+                    console.log('获取到的知识点内容:', knowledgeContent);
+                    
+                    // 转换kb_reference为知识点节点格式
+                    this.originalKnowledgeNodes = row.kb_reference.map((item, index) => {
+                        const content = knowledgeContent[index] || {};
+                        return {
+                            kb_id: item.kb_id,
+                            kb_title: content.title || '未知标题',
+                            kb_content: content.content || '未找到内容',
+                            kb_simil: item.similarity || 0
+                        };
+                    });
+                    
+                    console.log('处理后的原始知识点:', this.originalKnowledgeNodes);
+                    
+                    // 备份原始知识点，用于重置
+                    this.originalKnowledgeNodesBackup = JSON.parse(JSON.stringify(this.originalKnowledgeNodes));
+                } catch (error) {
+                    console.error('获取知识点内容失败:', error);
+                    this.$message.warning('获取原始知识点内容失败，请尝试重新打开');
+                }
+            } else {
+                console.log('该反馈没有原始知识点引用');
             }
             
             // 根据原始知识点的来源部门自动选择部门
@@ -812,14 +846,14 @@ module.exports = {
             this.knowledgeTree = []; // 清空现有树数据
             
             try {
-                console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
+                // console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
                 
                 const params = new URLSearchParams({
                     department: this.selectedDepartment
                 });
                 
-                const apiUrl = `${baseUrl}api/query_kb_category?${params.toString()}`;
-                console.log('请求URL:', apiUrl);
+                const apiUrl = `${baseUrl}/api/query_kb_category?${params.toString()}`;
+                // console.log('请求URL:', apiUrl);
                 
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -836,7 +870,7 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`获取到的原始数据:`, data);
+                // console.log(`获取到的原始数据:`, data);
                 
                 // 验证响应数据格式
                 if (!data) {
@@ -848,7 +882,7 @@ module.exports = {
                 
                 // 将API返回的数据转换为树形结构
                 this.knowledgeTree = this.transformCategoryTree(data);
-                console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
+                // console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
                 
                 if (this.knowledgeTree.length === 0) {
                     this.$message.warning('未找到有效的知识分类');
@@ -1020,13 +1054,13 @@ module.exports = {
                 // 根据不同部门选择不同的API接口
                 if (this.selectedDepartment === '市医保中心') {
                     // 医保知识库使用 getKnowle 接口
-                    apiUrl = `${baseUrl}api/feedback/getKnowle/${encodeURIComponent(category)}`;
+                    apiUrl = `${baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category)}`;
                 } else if (this.selectedDepartment === '龙岗政数局') {
                     // 市监局知识库使用 getLGKnowle 接口
-                    apiUrl = `${baseUrl}api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
+                    apiUrl = `${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
                 } else {
                     // 如果是其他部门，默认使用龙岗政数局的接口
-                    apiUrl = `${baseUrl}api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
+                    apiUrl = `${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
                 }
                 
                 console.log('知识点请求URL:', apiUrl);
@@ -1044,7 +1078,7 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`${category} 知识点数据:`, data);
+                // console.log(`${category} 知识点数据:`, data);
                 
                 if (data && data.feedback_list) {
                     // 过滤掉无效的知识点
@@ -1100,7 +1134,7 @@ module.exports = {
                 return;
             }
             
-            console.log(`找到分类节点:`, categoryNode);
+            // console.log(`找到分类节点:`, categoryNode);
             
             // 添加知识点作为子节点
             if (!categoryNode.children) {
@@ -1129,7 +1163,7 @@ module.exports = {
                     };
                 });
             
-            console.log(`转换后的有效知识点节点数量: ${knowledgeNodes.length}`);
+            // console.log(`转换后的有效知识点节点数量: ${knowledgeNodes.length}`);
             
             // 添加到分类节点下
             categoryNode.children = knowledgeNodes;
@@ -1474,43 +1508,45 @@ module.exports = {
         // 查看引用知识点详情
         async viewKbReference(row) {
             this.currentFeedback = row;
-            console.log('知识点row', row,row.department);
+            console.log('知识点row', row, row.department);
             
             if (row.kb_reference && Array.isArray(row.kb_reference)) {
-                if (this.selectedDepartment === '龙岗政数局') {
+                //TODO: 需要修改  row.department === '市医保中心'
+                if (this.selectedDepartment === '市医保中心') {
                     // 提取所有的 kb_id
                     const kgids = row.kb_reference.map(item => item.kb_id);
                     
-                // 获取知识点内容
-                const knowledgeContent = await this.fetchKnowledgeContent(kgids);
-                
-                // 将获取到的内容与原始数据合并
-                const mergedKbReference = row.kb_reference.map(ref => {
-                    const content = knowledgeContent.find((_, index) => index === row.kb_reference.indexOf(ref));
-                    return {
-                        kb_id: ref.kb_id,
-                        similarity: ref.similarity,
-                        kb_title: content ? content.title : '',
-                        kb_content: content ? content.content : ''
-                    };
-                });
-                
-                // 更新当前反馈的知识点引用数据
-                this.currentFeedback = {
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchKnowledgeContent(kgids);
+                    
+                    // 将获取到的内容与原始数据合并
+                    const mergedKbReference = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
+                        return {
+                            kb_id: ref.kb_id,
+                            similarity: ref.similarity,
+                            kb_title: content ? content.title : '',
+                            kb_content: content ? content.content : ''
+                        };
+                    });
+                    
+                    // 更新当前反馈的知识点引用数据
+                    this.currentFeedback = {
                         ...row,
                         kb_reference: mergedKbReference
                     };
                 } else {
-                    // 提取所有的 kgid
-                    const kgids = row.kb_reference.map(item => item.kgid);
+                    // 龙岗政数局处理逻辑
+                    const kbIds = row.kb_reference.map(item => item.kb_id);
                     
                     // 获取知识点内容
-                    const knowledgeContent = await this.fetchLonggangKnowledgeContent(kgids);
+                    const knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
+                    
                     // 将获取到的内容与原始数据合并
-                    const mergedKbReference = row.kb_reference.map(ref => {
-                        const content = knowledgeContent.find((_, index) => index === row.kb_reference.indexOf(ref));
+                    const mergedKbReference = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
                         return {
-                            kgid: ref.kgid,
+                            kb_id: ref.kb_id, // 保持kb_id字段一致
                             similarity: ref.similarity,
                             kb_title: content ? content.title : '',
                             kb_content: content ? content.content : ''
@@ -1569,64 +1605,153 @@ module.exports = {
             }
 
             this.isGeneratingAnswer = true;
+            this.isStreaming = true;
+            this.streamResponse = '';
+            this.currentStreamChunk = '';
             this.$message.info('正在生成回答，请稍候...');
 
             try {
-                // 构建知识点数据
-                const knowledgeData = {
-                    original_knowledge: this.originalKnowledgeNodes.map(item => ({
-                        kgid: item.kb_id,
-                        title: item.kb_title,
-                        content: item.kb_content
+                // 构建知识点引用数据
+                const kb_reference = [
+                    ...this.originalKnowledgeNodes.map(item => ({
+                        kb_id: item.kb_id,
+                        kb_title: item.kb_title,
+                        kb_content: item.kb_content,
+                        similarity: item.kb_simil || 0
                     })),
-                    new_knowledge: this.selectedKnowledgeNodes.map(item => ({
-                        kgid: item.kgid,
-                        title: item.label,
-                        content: item.content
+                    ...this.selectedKnowledgeNodes.map(item => ({
+                        kb_id: item.kgid,
+                        kb_title: item.label,
+                        kb_content: item.content,
+                        similarity: 0
                     }))
-                };
+                ];
+
+                // 构建消息历史
+                const messages = [];
+                
+                // 添加用户问题
+                messages.push({
+                    role: "user",
+                    content: this.currentFeedbackForKnowledge.user_question
+                });
+                
+                // 如果有AI回答，添加到消息中
+                if (this.currentFeedbackForKnowledge.ai_answer) {
+                    messages.push({
+                        role: "assistant",
+                        content: this.currentFeedbackForKnowledge.ai_answer
+                    });
+                }
 
                 // 构建请求数据
                 const requestData = {
-                    user_question: this.currentFeedbackForKnowledge.user_question,
-                    knowledge_list: [...knowledgeData.original_knowledge, ...knowledgeData.new_knowledge]
+                    model: this.currentFeedbackForKnowledge.model_name,
+                    messages: this.currentFeedbackForKnowledge.user_question,
+                    kb_reference: kb_reference,
+                    max_tokens: 10240,
+                    temperature: 0.6,
+                    stream: true,
+                    // chat_id: this.currentFeedbackForKnowledge.md_id || `chat-${Date.now()}`,
+                    // TODO: 需要修改
+                    department: this.currentFeedbackForKnowledge.department,
+                    kb_category: this.currentFeedbackForKnowledge.category
                 };
 
-                // 调用后端API
-                const response = await axios.post(`${baseUrl}/api/feedback/generateAnswer`, requestData, {
+                console.log('AI生成请求数据:', requestData);
+
+                // 创建响应处理器
+                const processStream = (response) => {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    
+                    return new ReadableStream({
+                        async start(controller) {
+                            try {
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    
+                                    if (done) {
+                                        controller.close();
+                                        break;
+                                    }
+                                    
+                                    const chunk = decoder.decode(value, { stream: true });
+                                    controller.enqueue(chunk);
+                                }
+                            } catch (error) {
+                                controller.error(error);
+                            }
+                        }
+                    });
+                };
+
+                // 发送请求并处理流式响应
+                const response = await fetch(`${baseUrl}/v1/chat/completions/time`, {
+                    method: 'POST',
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify(requestData)
                 });
 
-                if (response.data && response.data.answer) {
-                    this.generatedAnswer = response.data.answer;
-                    
-                    // 渲染Markdown
-                    if (this.md) {
-                        try {
-                            this.renderedGeneratedAnswer = this.md.render(this.generatedAnswer);
-                        } catch (error) {
-                            console.error('Markdown渲染失败:', error);
-                            this.renderedGeneratedAnswer = this.generatedAnswer;
-                        }
-                    } else {
-                        this.renderedGeneratedAnswer = this.generatedAnswer;
-                    }
-
-                    this.$message.success('回答生成成功');
-                    
-                    // 确保生成的回答区域可见
-                    this.qaCollapseActive = ['question', 'answer'];
-                } else {
-                    throw new Error('生成回答失败');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const stream = await processStream(response);
+                const reader = stream.getReader();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                        break;
+                    }
+                    
+                    // 处理接收到的数据块
+                    const chunks = value.split('\n').filter(chunk => chunk.trim());
+                    
+                    for (const chunk of chunks) {
+                        try {
+                            if (chunk.startsWith('data: ')) {
+                                const jsonStr = chunk.slice(6);
+                                if (jsonStr === '[DONE]') {
+                                    continue;
+                                }
+                                const jsonData = JSON.parse(jsonStr);
+                                if (jsonData.choices && jsonData.choices[0].delta.content) {
+                                    const content = jsonData.choices[0].delta.content;
+                                    this.streamResponse += content;
+                                    this.currentStreamChunk = this.streamResponse;
+                                    
+                                    // 实时渲染Markdown
+                                    if (this.md) {
+                                        this.renderedGeneratedAnswer = this.md.render(this.streamResponse);
+                                    } else {
+                                        this.renderedGeneratedAnswer = this.streamResponse;
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error('处理数据块时出错:', error);
+                        }
+                    }
+                }
+
+                this.generatedAnswer = this.streamResponse;
+                this.$message.success('回答生成成功');
+                
+                // 确保生成的回答区域可见
+                this.qaCollapseActive = ['question', 'answer'];
+                
             } catch (error) {
                 console.error('生成回答失败:', error);
                 this.$message.error('生成回答失败: ' + error.message);
             } finally {
                 this.isGeneratingAnswer = false;
+                this.isStreaming = false;
             }
         },
 

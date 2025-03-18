@@ -29,7 +29,7 @@ export function setRandomIdInCookie() {
     const expires = "Fri, 31 Dec 2099 23:59:59 GMT";
 
     // 设置 id，包含随机 ID 和过期时间
-    document.cookie = `blue_Medicine_Id=${randomId}; expires=${expires}; path=/`;
+    document.cookie = `miniai_TSG_Id=${randomId}; expires=${expires}; path=/`;
     console.log(`Random ID stored in cookie: ${randomId}`);
 }
 
@@ -38,7 +38,7 @@ export function getRandomIdFromCookie() {
     const cookieArray = document.cookie.split('; ');
     for (let i = 0; i < cookieArray.length; i++) {
         const cookie = cookieArray[i].split('=');
-        if (cookie[0] === 'blue_Medicine_Id') {
+        if (cookie[0] === 'miniai_TSG_Id') {
             return cookie[1];
         }
     }

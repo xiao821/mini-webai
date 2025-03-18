@@ -83,6 +83,8 @@ export async function submitFeedback() {
         // 获取当前模式和对应的 kb_category
         const currentMode = getCurrentMode();
         const kb_category = modeConfig[currentMode]?.kb_category || '';
+        // 获取当前模式的department
+        const department = modeConfig[currentMode]?.department || '龙岗政数局';
 
         // 等待 API 调用完成
         await dislikefeedback(
@@ -92,7 +94,8 @@ export async function submitFeedback() {
             feedbackType, 
             feedbackDetail,
             kb_category,
-            currentModel
+            currentModel,
+            department
         );
 
         // API 调用成功后显示成功提示

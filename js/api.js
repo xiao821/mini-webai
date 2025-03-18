@@ -3,14 +3,34 @@ import { modeConfig } from './config.js';
 import { currentModel } from './index.js';
 
 // 获取知识分类
-export async function fetchKnowledgeCategory() {
+export async function fetchKnowledgeCategory(department = '') {
     try {
         const response = await axios.get(`${API_BASE_URL}/api/feedback/getKnowleCate/`, {
-            headers: { 'Authorization': API_AUTH_TOKEN }
+            headers: { 'Authorization': API_AUTH_TOKEN },
+            params: { answer_type:department }
         });
-        return response.data;
+        // console.log('知识分类数据:', response);
+        return response.data.knowledge_list;
     } catch (error) {
         console.error('获取知识分类失败:', error);
+        throw error;
+    }
+}
+
+// 获取lgzsj知识库列表
+export async function fetchLgzsjKnowledgeList(mode = 'default') {
+    try {
+        // 从modeConfig中获取对应mode的department
+        const { modeConfig } = await import('./config.js');
+        const department = modeConfig[mode]?.department || "龙岗政数局";
+        
+        const response = await axios.get(`${API_BASE_URL}/api/query_kb_category`, {
+            params: { 'department': department },
+            headers: { 'Authorization': API_AUTH_TOKEN }    
+        });
+        return response.data || [];
+    } catch (error) {
+        console.error('获取知识库列表失败:', error);
         throw error;
     }
 }
@@ -78,39 +98,67 @@ export async function deleteChatById(chatId) {
 
 // 发送消息到API
 export async function sendChatCompletion(currentConversationId, messages, currentMode) {
+    const maxRetries = 3;
+    let retryCount = 0;
 
-    try {
-        // 准备请求数据
-        const requestData = {
-            model: currentModel,
-            messages: messages,
-            max_tokens: 10240,
-            temperature: 0,
-            stream: true,
-            chat_id: currentConversationId,
-            department: modeConfig[currentMode]?.department,
-            kb_category: modeConfig[currentMode]?.kb_category
-        };
+    while (retryCount < maxRetries) {
+        try {
+            // 准备请求数据
+            const requestData = {
+                model: currentModel,
+                messages: messages,
+                max_tokens: 10240,
+                temperature: 0,
+                stream: true,
+                chat_id: currentConversationId,
+                department: modeConfig[currentMode]?.department,
+                kb_category: modeConfig[currentMode]?.kb_category
+            };
 
-        // 发送请求
-        const response = await fetch(`${API_BASE_URL}v1/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': API_AUTH_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
-        });
+            // 发送请求
+            const response = await fetch(`${API_BASE_URL}/v1/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': API_AUTH_TOKEN,
+                    'Content-Type': 'application/json',
+                    'Connection': 'keep-alive',
+                    'Accept': 'text/event-stream'
+                },
+                body: JSON.stringify(requestData),
+                // 添加额外的fetch选项
+                keepalive: true,
+                timeout: 30000, // 30秒超时
+                signal: AbortSignal.timeout(30000) // 30秒后自动中断
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API 请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API 请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            // 检查响应头中是否包含正确的内容类型
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('text/event-stream')) {
+                console.warn('警告：服务器响应的内容类型不是 text/event-stream');
+            }
+
+            return response;
+
+        } catch (error) {
+            retryCount++;
+            console.error(`发送聊天请求失败 (尝试 ${retryCount}/${maxRetries}):`, error);
+            
+            if (error.name === 'AbortError') {
+                console.log('请求超时，准备重试...');
+            }
+            
+            if (retryCount === maxRetries) {
+                throw new Error(`在 ${maxRetries} 次尝试后仍然失败: ${error.message}`);
+            }
+            
+            // 等待一段时间后重试
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
         }
-
-        return response;
-    } catch (error) {
-        console.error('发送聊天请求失败:', error);
-        throw error;
     }
 }
 
@@ -145,9 +193,13 @@ export function record_voice(audioBlob) {
 }
 
 // post点踩进行反馈
-export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail, kb_category, model) {
-    console.log('dislikefeedback', USER_ID, currentMessageRAG,kb_category, model);
+export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail, kb_category, model, department) {
+    // console.log('dislikefeedback', USER_ID, currentMessageRAG, kb_category, model, department);
     try {
+        // 获取department参数，如果没有传入则从配置中获取默认值
+        const { modeConfig } = await import('./config.js');
+        const useDepartment = department || modeConfig[model]?.department || "龙岗政数局";
+        
         // 准备请求数据
         const requestData = {
             kb_reference: currentMessageRAG, // 参考知识点
@@ -157,7 +209,8 @@ export async function dislikefeedback(currentMessageRAG, MessageHistory, message
             detail: detail, // 反馈详情
             user_id: USER_ID, // 用户ID
             category: kb_category, // 知识分类
-            model_name: model // 模型
+            model_name: model, // 模型
+            department: useDepartment // 知识库类别
         };
 
         // 发送请求

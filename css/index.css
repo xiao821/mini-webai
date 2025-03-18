@@ -387,3 +387,326 @@ textarea {
     font-weight: 600;
     color: #2563eb;
 }
+
+/* 消息容器样式 */
+.message-container {
+    position: relative;
+    word-break: break-word;
+}
+
+/* 代码块样式 */
+pre {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 10px 0;
+    border: 1px solid #e9ecef;
+}
+
+code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+}
+
+/* 表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+th, td {
+    border: 1px solid #e9ecef;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 引用样式 */
+blockquote {
+    border-left: 4px solid #e9ecef;
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #6c757d;
+}
+
+/* 链接样式 */
+a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 列表样式 */
+ul, ol {
+    padding-left: 24px;
+    margin: 16px 0;
+}
+
+li {
+    margin-bottom: 4px;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+h1 {
+    font-size: 2em;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.25em;
+}
+
+/* 分隔线样式 */
+hr {
+    height: 1px;
+    background-color: #e9ecef;
+    border: none;
+    margin: 24px 0;
+}
+
+/* 图片样式 */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 16px 0;
+}
+
+/* 反馈按钮样式 */
+.feedback-btn {
+    transition: all 0.2s ease;
+}
+
+.feedback-btn:hover {
+    transform: scale(1.1);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    transform: translateX(100%);
+}
+
+.sidebar:not(.hidden) {
+    transform: translateX(0);
+}
+
+.sidebar-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+/* 头部按钮样式 */
+.header-button {
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.header-button:hover {
+    background-color: #f3f4f6;
+}
+
+/* 模式按钮样式 */
+.mode-button {
+    transition: all 0.2s ease;
+}
+
+.mode-button:hover {
+    background-color: #f3f4f6;
+}
+
+/* 知识分类项样式 */
+.category-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    background-color: #f3f4f6;
+}
+
+.category-item.active {
+    background-color: #ebf5ff;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+/* 面包屑导航样式 */
+.breadcrumb-container {
+    display: flex;
+    align-items: center;
+}
+
+#selected-category-breadcrumb {
+    display: flex;
+    align-items: center;
+}
+
+#clear-category {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#clear-category:hover {
+    background-color: #f3f4f6;
+    border-radius: 50%;
+}
+
+/* 反馈表单样式 */
+.feedback-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.feedback-radio:checked {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+}
+
+.feedback-radio:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.feedback-textarea {
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    resize: none;
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.feedback-cancel-button, .feedback-submit-button {
+    transition: all 0.2s ease;
+}
+
+.feedback-cancel-button:hover {
+    background-color: #f3f4f6;
+}
+
+.feedback-submit-button:hover {
+    background-color: #2563eb;
+}
+
+/* 知识分类相关样式 */
+.category-toggle {
+    display: inline-block;
+    transition: transform 0.2s;
+    margin-right: 8px;
+    font-size: 10px;
+    color: #666;
+    width: 12px;
+    text-align: center;
+}
+
+.category-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.category-item {
+    margin-bottom: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.subcategory-container {
+    margin-left: 20px;
+    margin-top: 4px;
+}
+
+.subcategory-item {
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 13px;
+}
+
+.subcategory-item:hover {
+    background-color: #f3f4f6;
+}
+
+.subcategory-item.active {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    font-weight: 500;
+}
+
+/* 面包屑导航样式 */
+#selected-category-breadcrumb {
+    display: flex;
+    align-items: center;
+}
+
+#clear-category,
+#clear-category-top {
+    cursor: pointer;
+}
+
+/* 当没有选择分类时隐藏叉号按钮 */
+#clear-category[style*="display: none"],
+#clear-category-top[style*="display: none"] {
+    visibility: hidden;
+}

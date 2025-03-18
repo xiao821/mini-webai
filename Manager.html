@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>知识库管理</title>
+    <title>知识库管理系统</title>
     <!-- 引入Vue -->
     <script src="./external_js/vue.js"></script>
     <!-- 引入Element UI -->
@@ -25,6 +25,8 @@
     <script src="./external_js/markdown-it.js"></script>
     <!-- 引入axios -->
     <script src="./external_js/axios.min.js"></script>
+    <!-- 引入GoJS库 -->
+    <script src="./external_js/gojs.js"></script>
 
     <style>
         body {
@@ -37,14 +39,17 @@
             margin: 0;
         }
         .sidebar {
-            width: 200px;
+            width: 160px;
             background-color: #545c64;
             height: 100%;
         }
         .main-content {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
             overflow-y: auto;
+        }
+        .el-card__body, .el-main {
+            padding: 0;
         }
     </style>
 </head>
@@ -67,6 +72,14 @@
                     <el-menu-item index="/knowledge">
                         <i class="el-icon-document"></i>
                         <span slot="title">知识库</span>
+                    </el-menu-item>
+                    <el-menu-item index="/voice_list">
+                        <i class="el-icon-document"></i>
+                        <span slot="title">录音数据</span>
+                    </el-menu-item>
+                    <el-menu-item index="/batchText">
+                        <i class="el-icon-document"></i>
+                        <span slot="title">批量测试</span>
                     </el-menu-item>
                 </el-menu>
             </div>
@@ -92,6 +105,14 @@
             {
                 path: '/knowledge',
                 component: httpVueLoader('components/knowledge.vue')
+            },
+            {
+                path: '/voice_list',
+                component: httpVueLoader('components/voice_list.vue')
+            },
+            {
+                path: '/batchText',
+                component: httpVueLoader('components/batchText.vue')
             }
         ]
 

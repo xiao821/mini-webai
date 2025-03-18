@@ -284,6 +284,12 @@
             <div class="knowledge-dialog-container">
                 <!-- 左侧知识树 -->
                 <div class="knowledge-tree-panel">
+                    <div class="department-selector">
+                        <el-select v-model="selectedDepartment" placeholder="请选择知识库">
+                            <el-option label="龙岗政数局知识库" value="龙岗政数局"></el-option>
+                            <el-option label="市医保中心知识库" value="市医保中心"></el-option>
+                        </el-select>
+                    </div>
                     <div class="search-box">
                         <el-input
                             v-model="knowledgeFilterText"
@@ -453,6 +459,7 @@
 <script type="module">
 // const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
 const baseUrl = 'https://lgdev.baicc.cc/';
+// const baseUrl = 'http://172.16.99.32:1032';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
 module.exports = {
@@ -534,6 +541,174 @@ module.exports = {
             isGeneratingAnswer: false,
             generatedAnswer: '',
             renderedGeneratedAnswer: '',
+            // 新增知识库部门选择
+            selectedDepartment: '龙岗政数局',
+            // 龙岗政数局知识点树
+            lgznTreeData: [
+                {
+                    "category2": "一、企业注册与设立",
+                    "category3": [
+                        "1.1 名称管理",
+                        "1.1 注册流程",
+                        "1.2 名称管理",
+                        "1.3 资本与出资",
+                        "1.4 地址与场所"
+                    ]
+                },
+                {
+                    "category2": "七、商事登记制度改革",
+                    "category3": [
+                        "7.1 政策解读",
+                        "7.2 新模式",
+                        "7.3 特殊事项"
+                    ]
+                },
+                {
+                    "category2": "三、企业注销与清算",
+                    "category3": [
+                        "3.1 注销流程",
+                        "3.2 清算程序",
+                        "3.3 特殊注销"
+                    ]
+                },
+                {
+                    "category2": "二、企业变更与备案",
+                    "category3": [
+                        "2.1 变更事项",
+                        "2.2 备案要求"
+                    ]
+                },
+                {
+                    "category2": "五、外资企业管理",
+                    "category3": [
+                        "5.1 投资政策",
+                        "5.2 代表机构管理",
+                        "5.3 特殊规定"
+                    ]
+                },
+                {
+                    "category2": "八、金融与证券监管",
+                    "category3": [
+                        "2.2 监管要求",
+                        "2.监管要求",
+                        "8.2 监管要求",
+                        "8.3 特殊规定"
+                    ]
+                },
+                {
+                    "category2": "六、营业执照管理",
+                    "category3": [
+                        "6.1 办理与换发",
+                        "6.2 内容与效力",
+                        "6.3 特殊情况"
+                    ]
+                },
+                {
+                    "category2": "十、其他专项事务",
+                    "category3": [
+                        "",
+                        "10.1 医疗器械管理",
+                        "10.2 食品与卫生许可",
+                        "10.3 特种设备管理",
+                        "10.4 农业合作组织",
+                        "10.5 教育与文化审批",
+                        "教育与文化审批"
+                    ]
+                },
+                {
+                    "category2": "四、股权管理与转让",
+                    "category3": [
+                        "",
+                        "4.1 股权变更",
+                        "4.2 材料提交",
+                        "4.3 特殊情况"
+                    ]
+                }
+            ],
+            // 市医保中心知识点树
+            yibaoTreeData: [
+                {
+                    "category2": "个人账户管理",
+                    "category3": [
+                        "其他个人账户问题",
+                        "家庭共济与亲情账户",
+                        "账户使用范围",
+                        "账户查询与余额"
+                    ]
+                },
+                {
+                    "category2": "其他医保相关",
+                    "category3": [
+                        "其他保障",
+                        "其他辅助操作",
+                        "医保卡管理",
+                        "医保报销",
+                        "医疗保险系统",
+                        "惠民保",
+                        "相关操作问题",
+                        "相关流程",
+                        "缴费方式",
+                        "购买方式"
+                    ]
+                },
+                {
+                    "category2": "医保待遇与保障",
+                    "category3": [
+                        "住院待遇",
+                        "住院待遇医保待遇与保障",
+                        "其他保障",
+                        "基本医疗保险报销",
+                        "大病保险与补充医疗保险",
+                        "普通门诊待遇",
+                        "门诊大病待遇",
+                        "门诊慢特病待遇",
+                        "门诊特定病种待遇",
+                        "门诊统筹待遇"
+                    ]
+                },
+                {
+                    "category2": "医疗机构管理与就医",
+                    "category3": [
+                        "医疗费用结算",
+                        "定点医疗机构",
+                        "就医管理与流程",
+                        "社康中心管理"
+                    ]
+                },
+                {
+                    "category2": "参保与缴费",
+                    "category3": [
+                        "参保登记与信息变更",
+                        "参保资格与条件",
+                        "参保资格与条件参保与缴费",
+                        "缴费与补缴",
+                        "缴费年限",
+                        "缴费方式",
+                        "缴费标准与待遇",
+                        "重复参保与处理"
+                    ]
+                },
+                {
+                    "category2": "异地就医管理",
+                    "category3": [
+                        "其他异地就医问题",
+                        "异地就医备案",
+                        "异地就医报销",
+                        "转诊与转院",
+                        "门诊慢特病异地就医"
+                    ]
+                },
+                {
+                    "category2": "特定人群医保",
+                    "category3": [
+                        "失业人员医保",
+                        "学生医保",
+                        "新生儿医保",
+                        "灵活就业人员医保",
+                        "退休人员医保"
+                    ]
+                }
+            ]
         }
     },
     computed: {
@@ -547,6 +722,18 @@ module.exports = {
         // 监听知识库搜索文本变化
         knowledgeFilterText(val) {
             this.$refs.knowledgeTree && this.$refs.knowledgeTree.filter(val);
+        },
+        // 监听部门变化
+        selectedDepartment(val) {
+            // 当部门变化时，重新获取知识库分类
+            this.fetchKnowledgeCategories();
+        },
+        // 监听知识标注对话框显示状态
+        knowledgeDialogVisible(val) {
+            if (val) {
+                // 当打开对话框时，重新获取知识库分类
+                this.fetchKnowledgeCategories();
+            }
         }
     },
     methods: {
@@ -777,34 +964,33 @@ module.exports = {
         async fetchKnowledgeCategories() {
             this.loading = true;
             try {
-                const response = await axios.get(`${baseUrl}/api/feedback/getKnowleCate/`, {
-                    headers: {
-                        'Authorization': API_AUTH_TOKEN
+                // 根据选择的部门获取不同的知识树数据
+                let treeData = [];
+                if (this.selectedDepartment === '龙岗政数局') {
+                    treeData = this.lgznTreeData;
+                } else if (this.selectedDepartment === '市医保中心') {
+                    treeData = this.yibaoTreeData;
+                }
+                
+                // 将树形数据转换为适合Element UI Tree组件的格式
+                this.knowledgeTree = this.transformCategoryTree(treeData);
+                
+                // 确保树节点默认展开
+                this.$nextTick(() => {
+                    if (this.$refs.knowledgeTree) {
+                        // 使用 Element UI Tree 的正确方法展开节点
+                        const expandAllNodes = (data) => {
+                            data.forEach(node => {
+                                if (node.children && node.children.length > 0) {
+                                    this.$refs.knowledgeTree.store.nodesMap[node.id].expanded = true;
+                                    expandAllNodes(node.children);
+                                }
+                            });
+                        };
+                        
+                        expandAllNodes(this.knowledgeTree);
                     }
                 });
-                
-                if (response.data && response.data.knowledge_list && response.data.knowledge_list.length > 0) {
-                    // const treeJson = JSON.parse(response.data.feedback_list[0].tree_json);
-                    const treeJson = JSON.parse(response.data.knowledge_list[0].tree_json);
-                    this.knowledgeTree = this.transformCategoryTree(treeJson);
-                    
-                    // 确保树节点默认展开
-                    this.$nextTick(() => {
-                        if (this.$refs.knowledgeTree) {
-                            // 使用 Element UI Tree 的正确方法展开节点
-                            const expandAllNodes = (data) => {
-                                data.forEach(node => {
-                                    if (node.children && node.children.length > 0) {
-                                        this.$refs.knowledgeTree.store.nodesMap[node.id].expanded = true;
-                                        expandAllNodes(node.children);
-                                    }
-                                });
-                            };
-                            
-                            expandAllNodes(this.knowledgeTree);
-                        }
-                    });
-                }
                 
             } catch (error) {
                 console.error('获取知识点分类失败:', error);
@@ -815,44 +1001,84 @@ module.exports = {
         },
         
         // 转换分类树结构
-        transformCategoryTree(treeJson) {
-            return treeJson.map((category, index) => {
-                const result = {
+        transformCategoryTree(treeData) {
+            return treeData.map((category, index) => {
+                // 创建二级分类节点
+                const categoryNode = {
                     id: `category-${index}`,
-                    label: category.name,
-                    name: category.name,
+                    label: category.category2,
+                    name: category.category2,
                     type: 'category',
+                    children: []
                 };
                 
-                if (category.children && category.children.length > 0) {
-                    result.children = category.children.map((subCategory, subIndex) => {
-                        return {
-                            id: `category-${index}-${subIndex}`,
-                            label: subCategory.name,
-                            name: subCategory.name,
-                            type: 'category',
-                            parentId: `category-${index}`
-                        };
-                    });
+                // 添加三级分类作为子节点
+                if (category.category3 && category.category3.length > 0) {
+                    categoryNode.children = category.category3
+                        .filter(subcategory => subcategory) // 过滤掉空字符串
+                        .map((subcategory, subIndex) => {
+                            return {
+                                id: `category-${index}-${subIndex}`,
+                                label: subcategory,
+                                name: subcategory,
+                                type: 'category',
+                                parentId: `category-${index}`
+                            };
+                        });
                 }
                 
-                return result;
+                return categoryNode;
             });
         },
         
         // 根据分类获取知识点列表
         async fetchKnowledgeByCategory(category) {
             try {
-                const response = await axios.get(`${baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category)}`, {
-                    headers: {
-                        'Authorization': API_AUTH_TOKEN
-                    }
-                });
+                // 模拟获取知识点的逻辑，实际项目中应从API获取
+                // 这里仅演示根据category名称返回模拟数据
                 
-                if (response.data && response.data.feedback_list) {
-                    // 将知识点添加到对应的分类节点下
-                    this.addKnowledgeItemsToTree(category, response.data.feedback_list);
+                // 创建一些模拟的知识点数据
+                const mockKnowledgeItems = [];
+                const itemCount = Math.floor(Math.random() * 5) + 3; // 随机3-7个知识点
+                
+                for (let i = 0; i < itemCount; i++) {
+                    let title, content;
+                    
+                    if (this.selectedDepartment === '龙岗政数局') {
+                        // 为龙岗政数局创建知识点
+                        if (category.includes('注册')) {
+                            title = `企业${category}知识点${i+1}`;
+                            content = `这是关于${category}的详细说明，包含办理要求、所需材料和流程步骤等内容。`;
+                        } else if (category.includes('变更')) {
+                            title = `${category}申请知识点${i+1}`;
+                            content = `这是关于${category}的详细内容，包含变更条件、所需证明文件和办理时限等要求。`;
+                        } else {
+                            title = `${category}知识点${i+1}`;
+                            content = `这是关于${category}的知识内容，包含相关政策解读和办理指南。第${i+1}条。`;
+                        }
+                    } else if (this.selectedDepartment === '市医保中心') {
+                        // 为市医保中心创建知识点
+                        if (category.includes('账户')) {
+                            title = `医保${category}知识点${i+1}`;
+                            content = `这是关于医保${category}的详细说明，包含查询方式、使用范围和注意事项。`;
+                        } else if (category.includes('待遇')) {
+                            title = `${category}报销知识点${i+1}`;
+                            content = `这是关于${category}的详细内容，包含报销比例、起付标准和最高支付限额等信息。`;
+                        } else {
+                            title = `${category}知识点${i+1}`;
+                            content = `这是关于医保${category}的知识内容，包含相关政策和办理流程。第${i+1}条。`;
+                        }
+                    }
+                    
+                    mockKnowledgeItems.push({
+                        kgid: `mock-${Date.now()}-${i}`,
+                        title: title,
+                        content: content
+                    });
                 }
+                
+                // 将知识点添加到对应的分类节点下
+                this.addKnowledgeItemsToTree(category, mockKnowledgeItems);
                 
             } catch (error) {
                 console.error('获取知识点失败:', error);
@@ -1439,7 +1665,7 @@ module.exports = {
 }
 </script>
 
-<style>
+<style scoped>
 .feedback-container {
     padding: 20px;
     height: 100%;
@@ -1580,6 +1806,21 @@ module.exports = {
     flex-direction: column;
     background-color: #fff;
     margin-right: 20px;
+}
+
+.knowledge-tree-panel .department-selector {
+    padding: 16px;
+    border-bottom: 1px solid #e6e6e6;
+    background-color: #fbfbfb;
+}
+
+.knowledge-tree-panel .department-selector .el-select {
+    width: 100%;
+}
+
+.knowledge-tree-panel .el-select .el-input__inner {
+    height: 40px;
+    line-height: 40px;
 }
 
 .knowledge-tree-panel .search-box {
@@ -1836,14 +2077,21 @@ module.exports = {
 .knowledge-item-title {
     font-weight: bold;
     display: inline-block;
-    max-width: 85%;
+    max-width: 80%;
     vertical-align: middle;
     margin-left: 5px;
+    margin-right: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .knowledge-item-checkbox {
     display: inline-block;
     vertical-align: middle;
+    float: right;
+    margin: 0;
+    padding: 0;
 }
 
 .item-tip {
@@ -1872,6 +2120,35 @@ module.exports = {
 
 .knowledge-item-checkbox .el-checkbox__inner:hover {
     border-color: #409EFF;
+}
+
+.item-content {
+    padding: 12px;
+    line-height: 1.6;
+    color: #303133;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 280px;
+    overflow-y: auto;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    border-left: 3px solid #409EFF;
+    margin-bottom: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+}
+
+.item-content:hover {
+    background-color: #f0f7ff;
+    transition: background-color 0.3s ease;
+}
+
+.clearfix {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .clearfix:after {

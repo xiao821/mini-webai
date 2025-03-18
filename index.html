@@ -10,6 +10,8 @@
      <script src="./external_js/purify.min.js"></script>
      <script src="./external_js/sweetalert2.js"></script>
 
+    <!-- <link rel="stylesheet" href="./css/tailwindcss.css"> -->
+
     <link rel="stylesheet" href="./css/index.css">
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen flex">
@@ -25,7 +27,7 @@
         
         <!-- 模式选择 -->
         <div class="p-4 border-b border-gray-200">
-            <h2 class="text-sm font-medium text-gray-500 mb-2">对话模式</h2>
+            <h2 class="text-sm font-medium text-gray-500 mb-2">知识库类别</h2>
             <div class="mode-buttons-container flex flex-col space-y-2">
                 <!-- 按钮将被动态插入到这里 -->
             </div>
@@ -45,38 +47,54 @@
                 </div>
             </div>
         </div>
-        
-        <!-- 用户信息 -->
-        <div class="p-4 border-t border-gray-200 mt-auto">
-            <div class="flex items-center">
-                <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                    U
-                </div>
-                <div class="ml-2">
-                    <div class="text-sm font-medium">测试用户</div>
-                    <div class="text-xs text-gray-500">体验版</div>
-                </div>
-            </div>
-        </div>
     </aside>
     
     <!-- 主内容区 -->
     <main class="flex-1 flex flex-col h-screen relative">
         <!-- 顶部导航 -->
         <header class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-            <div class="text-lg font-semibold" id="current-mode-title">通用咨询</div>
-            <div class="flex space-x-2">
-                <button class="header-button" id="question">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </button>
-                <button class="header-button" id="setting">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                </button>
-                <a href="Manager.html" target="_blank" class="header-button text-sm text-blue-600 hover:text-blue-800" title="进入后台管理系统">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                </a>
+            <div class="flex items-center">
+                <div class="flex items-center">
+                    <div class="text-lg font-semibold" id="current-mode-title">通用咨询</div>
+                    <!-- 面包屑导航 -->
+                    <div class="breadcrumb-container flex items-center ml-2">
+                        <span id="breadcrumb-separator" class="mx-2 text-gray-400">&gt;</span>
+                        <div id="selected-category-breadcrumb" class="flex items-center">
+                            <span id="selected-category-text" class="text-lg font-semibold"></span>
+                            <button id="clear-category" class="ml-1 text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-left: 8px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- 用户信息 -->
+                <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                        U
+                    </div>
+                    <div class="ml-2">
+                        <div class="text-sm font-medium">测试用户</div>
+                        <div class="text-xs text-gray-500">登录时间: <span id="login-time"></span></div>
+                    </div>
+                </div>
+                <!-- 功能按钮 -->
+                <div class="flex space-x-2">
+                    <button class="header-button" id="question">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                    <!-- <button class="header-button" id="setting">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button> -->
+                    <a href="Manager.html" target="_blank" class="header-button text-sm text-blue-600 hover:text-blue-800" title="进入后台管理系统">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                    </a>
+                </div>
             </div>
         </header>
         
@@ -129,9 +147,6 @@
                         </button>
                     </div>
                 </div>
-                <!-- <button type="button" id="record-button" class="record-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700">
-                    录
-                </button> -->
                 <button 
                     type="submit" 
                     id="send-button"
@@ -140,7 +155,6 @@
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                 </button>
-
             </form>
         </div>
         
@@ -199,20 +213,24 @@
             </div>
         </div>
         <!-- 侧边弹框 -->
-        <div id="theme-sidebar" class="sidebar hidden">
+        <!-- <div id="theme-sidebar" class="sidebar hidden">
             <div class="sidebar-content">
                 <span class="close-button">&times;</span>
-                <h2>待开发</h2>
-                <!-- <button id="day-mode">白天模式</button>
-                <button id="night-mode">夜晚模式</button> -->
             </div>
-        </div>
+        </div> -->
     </main>
 
     <!-- 右侧知识分类区域 -->
     <aside class="w-72 bg-white border-l border-gray-200 flex flex-col h-screen overflow-hidden">
         <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">知识分类: <span id="selected-category" style="color: red;">无</span></h2>
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center justify-between" style="margin: 0;">
+                <div>知识分类: <span id="selected-category" style="color: red;">无</span></div>
+                <button id="clear-category-top" class="text-gray-400 hover:text-gray-600 hidden" style="color: red;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </h2>
             <p class="text-sm text-gray-500 mt-1">点击选择相关分类</p>
         </div>
         
@@ -222,13 +240,6 @@
                 <div class="text-sm text-gray-500 animate-pulse">加载中...</div>
             </div>
         </div>
-        
-        <!-- <div class="p-4 border-t border-gray-200">
-            <div class="text-sm text-gray-600">
-                <span class="font-medium">当前选择：</span>
-                <span id="selected-category" class="text-blue-600">无</span>
-            </div>
-        </div> -->
     </aside>
 
     <script src="./external_js/axios.min.js"></script>

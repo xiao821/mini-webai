@@ -18,7 +18,7 @@ export function initializeElements(elements) {
     elements.newChatButton = document.getElementById('new-chat');
     elements.currentModeTitle = document.getElementById('current-mode-title');
     elements.questionButton = document.getElementById('question');
-    elements.settingButton = document.getElementById('setting');
+    // elements.settingButton = document.getElementById('setting');
     elements.uploadButton = document.getElementById('Uploadfile');
     elements.welcomeMessageContainer = document.getElementById('welcome-message-container');
     elements.modeButtons = document.querySelectorAll('.mode-button');

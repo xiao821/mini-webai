@@ -121,7 +121,12 @@
                                     <el-button type="text" size="mini" @click.stop="handleShowDialog1(item)">
                                         <i class="el-icon-s-operation"></i> 知识分解
                                     </el-button>
-                                    <el-button type="text" size="mini" @click.stop="showItemGraph(item, $event)">
+                                    <el-button 
+                                        type="text" 
+                                        size="mini" 
+                                        @click.stop="showItemGraph(item, $event)"
+                                        :disabled="!decompositionJson"
+                                        :class="{'disabled-button': !decompositionJson}">
                                         <i class="el-icon-share"></i> 知识图谱
                                     </el-button>
                                 </div>
@@ -295,11 +300,16 @@ module.exports =  {
             this.decompositionDialogVisible = false;
             this.decompositionResult = '';
             this.isLoading = false;
+            // 不要清除decompositionJson，因为需要用于显示知识图谱
         },
         
         // 知识分解按钮点击事件
         handleShowDialog1(item) {
             this.decompositionDialogVisible = true;
+            
+            // 保存当前选中的知识项
+            this.currentKnowledgeItem = item;
+            
             // 确保在下一个事件循环中执行
             this.$nextTick(() => {
                 // 开始生成知识分解
@@ -318,6 +328,7 @@ module.exports =  {
                 return;
             }
             
+            this.isLoading = true; // 显示加载状态
             this.loadingMessage = '正在生成知识分解...';
             console.log('生成知识分解:', item);
             try { 
@@ -370,20 +381,26 @@ module.exports =  {
 
                             console.log('知识图谱分解结果:', result.knol_data);
                             
+                            // 知识分解成功后提示用户可以查看知识图谱
+                            this.$message.success('知识分解成功，现在您可以查看知识图谱');
+                            
                             // 触发分解生成后的事件
-                            // this.onDecompositionGenerated(knolDataObj);
+                            this.onDecompositionGenerated(knolDataObj);
                         } catch (e) {
                             console.error('解析知识图谱数据失败:', e);
                             this.decompositionJson = null;
+                            this.$message.error('知识图谱数据解析失败');
                         }
                     } else {
                         this.decompositionJson = null;
+                        this.$message.warning('未找到可用的知识图谱数据');
                     }
                 } else {
                     throw new Error('API返回的数据格式不正确');
                 }
                 
             } catch (error) {
+                this.isLoading = false;
                 this.$message.error('生成知识分解失败: ' + error.message);
             }
         },
@@ -418,219 +435,17 @@ module.exports =  {
             // 保存当前选中的知识项
             this.currentKnowledgeItem = item;
             
+            // 检查是否已经进行过知识分解
+            if (!this.decompositionJson) {
+                this.$message.warning('请先点击"知识分解"按钮，生成知识分解结果后再查看知识图谱');
+                return;
+            }
+            
             // 打开图谱弹框并生成图谱
             this.graphDialogVisible = true;
-
-            console.log('-----------------------当前选中的知识项:', this.currentKnowledgeItem, this.decompositionJson);
             
-            // 如果已经有分解数据，则直接使用
-            if (this.currentKnowledgeItem && this.decompositionJson) {
-                this.generateKnowledgeGraph(this.currentKnowledgeItem, this.decompositionJson);
-            } else {
-                // 如果没有分解数据，创建一个多层级示例数据进行演示
-                // const demoData = {
-                //     "session": "root",
-                //     "title": "基本医疗保险一档参保人门诊医保待遇",
-                //     "items": [
-                //         {
-                //             "session": "section1",
-                //             "title": "一、普通门诊统筹待遇",
-                //             "items": [
-                //                 {
-                //                     "session": "section1_1",
-                //                     "title": "基本报销比例",
-                //                     "details": "按照医疗机构级别不同比例支付",
-                //                     "items": [
-                //                         {
-                //                             "session": "s1_1_1",
-                //                             "title": "一级以下医疗机构",
-                //                             "value": "75%"
-                //                         },
-                //                         {
-                //                             "session": "s1_1_2",
-                //                             "title": "二级医院",
-                //                             "value": "65%"
-                //                         },
-                //                         {
-                //                             "session": "s1_1_3",
-                //                             "title": "三级医院",
-                //                             "value": "55%"
-                //                         }
-                //                     ]
-                //                 },
-                //                 {
-                //                     "session": "section1_2",
-                //                     "title": "特殊人群额外补贴",
-                //                     "details": "退休人员及60岁以上居民参保人",
-                //                     "value": "支付比例提高5个百分点"
-                //                 },
-                //                 {
-                //                     "session": "section1_3",
-                //                     "title": "非选定医疗机构就诊",
-                //                     "details": "未经转诊到非选定医疗机构",
-                //                     "value": "统筹基金不予支付，可由个人账户支付"
-                //                 }
-                //             ]
-                //         },
-                //         {
-                //             "session": "section2",
-                //             "title": "二、普通门诊统筹支付限额",
-                //             "items": [
-                //                 {
-                //                     "session": "section2_1",
-                //                     "title": "职工基本医疗保险一档参保人",
-                //                     "items": [
-                //                         {
-                //                             "session": "s2_1_1",
-                //                             "title": "总体支付限额",
-                //                             "value": "不超过上上年度在岗职工年平均工资的6%（退休人员为7%）"
-                //                         },
-                //                         {
-                //                             "session": "s2_1_2",
-                //                             "title": "二级以上医院限额",
-                //                             "value": "不超过上上年度在岗职工年平均工资的3%（退休人员为3.5%）"
-                //                         }
-                //                     ]
-                //                 },
-                //                 {
-                //                     "session": "section2_2",
-                //                     "title": "职工基本医疗保险二档参保人、居民基本医疗保险参保人",
-                //                     "value": "支付限额最高不超过上上年度在岗职工年平均工资的1.5%"
-                //                 }
-                //             ]
-                //         },
-                //         {
-                //             "session": "section3",
-                //             "title": "三、门诊诊查费",
-                //             "items": [
-                //                 {
-                //                     "session": "section3_1",
-                //                     "title": "基本报销比例",
-                //                     "items": [
-                //                         {
-                //                             "session": "s3_1_1",
-                //                             "title": "一级以下医疗机构",
-                //                             "value": "80%"
-                //                         },
-                //                         {
-                //                             "session": "s3_1_2",
-                //                             "title": "二级医院",
-                //                             "value": "70%"
-                //                         },
-                //                         {
-                //                             "session": "s3_1_3",
-                //                             "title": "三级医院",
-                //                             "value": "60%"
-                //                         }
-                //                     ]
-                //                 },
-                //                 {
-                //                     "session": "section3_2",
-                //                     "title": "待遇限制",
-                //                     "value": "门诊诊查费待遇与其他由基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
-                //                 }
-                //             ]
-                //         },
-                //         {
-                //             "session": "section4",
-                //             "title": "四、门诊大型设备",
-                //             "items": [
-                //                 {
-                //                     "session": "section4_1",
-                //                     "title": "职工基本医疗保险一档参保人",
-                //                     "details": "在市内定点医疗机构门诊发生的大型医疗设备检查费用和治疗所发生的基本医疗费用",
-                //                     "value": "由职工基本医疗保险统筹基金按照80%的比例支付"
-                //                 },
-                //                 {
-                //                     "session": "section4_2",
-                //                     "title": "待遇限制",
-                //                     "value": "与其他由职工基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
-                //                 },
-                //                 {
-                //                     "session": "section4_3",
-                //                     "title": "适用范围",
-                //                     "value": "门诊大型医疗设备检查和治疗项目范围由市医疗保障行政部门另行制定"
-                //                 }
-                //             ]
-                //         },
-                //         {
-                //             "session": "section5",
-                //             "title": "五、门诊特定病种待遇",
-                //             "items": [
-                //                 {
-                //                     "session": "section5_1",
-                //                     "title": "门特病种分类",
-                //                     "items": [
-                //                         {
-                //                             "session": "s5_1_1",
-                //                             "title": "一类门特病种"
-                //                         },
-                //                         {
-                //                             "session": "s5_1_2",
-                //                             "title": "二类门特病种"
-                //                         }
-                //                     ]
-                //                 },
-                //                 {
-                //                     "session": "section5_2",
-                //                     "title": "一类门特病种支付比例",
-                //                     "items": [
-                //                         {
-                //                             "session": "s5_2_1",
-                //                             "title": "连续参保时间未满12个月",
-                //                             "value": "60%"
-                //                         },
-                //                         {
-                //                             "session": "s5_2_2",
-                //                             "title": "连续参保时间满12个月未满36个月",
-                //                             "value": "75%"
-                //                         },
-                //                         {
-                //                             "session": "s5_2_3",
-                //                             "title": "连续参保时间满36个月",
-                //                             "value": "90%"
-                //                         }
-                //                     ]
-                //                 },
-                //                 {
-                //                     "session": "section5_3",
-                //                     "title": "二类门特病种支付比例",
-                //                     "items": [
-                //                         {
-                //                             "session": "s5_3_1",
-                //                             "title": "高血压、糖尿病药品门诊费用",
-                //                             "details": "支付比例按第三十条规定执行"
-                //                         },
-                //                         {
-                //                             "session": "s5_3_2",
-                //                             "title": "签约家庭医生开具处方的高血压、糖尿病药品费用",
-                //                             "value": "90%"
-                //                         },
-                //                         {
-                //                             "session": "s5_3_3",
-                //                             "title": "其他二类门特病种",
-                //                             "items": [
-                //                                 {
-                //                                     "session": "s5_3_3_1",
-                //                                     "title": "职工基本医疗保险一档参保人",
-                //                                     "value": "80%"
-                //                                 },
-                //                                 {
-                //                                     "session": "s5_3_3_2",
-                //                                     "title": "职工二档、居民参保人",
-                //                                     "value": "不低于60%"
-                //                                 }
-                //                             ]
-                //                         }
-                //                     ]
-                //                 }
-                //             ]
-                //         }
-                //     ]
-                // };
-                // this.generateKnowledgeGraph(this.currentKnowledgeItem, demoData);
-                this.$message.warning('该知识点暂无分解数据');
-            }
+            // 生成知识图谱
+            this.generateKnowledgeGraph(this.currentKnowledgeItem, this.decompositionJson);
         },
 
         // 关闭图谱弹框
@@ -649,6 +464,8 @@ module.exports =  {
             if (container) {
                 container.innerHTML = '';
             }
+            
+            // 不要清除decompositionJson，因为可能还需要再次查看图谱
         },
 
         // 生成知识图谱
@@ -1284,6 +1101,12 @@ module.exports =  {
         
         // 查看知识点详情
         viewKnowledgeDetail(item) {
+            // 如果选择了不同的知识项，清除之前的分解数据
+            if (this.currentKnowledgeItem && this.currentKnowledgeItem.kgid !== item.kgid) {
+                this.decompositionJson = null;
+                this.decompositionResult = '';
+            }
+            
             this.editKnowledgeItem(item);
         },
 
@@ -1316,8 +1139,8 @@ module.exports =  {
                 link.href = URL.createObjectURL(blob);
                 
                 // 设置文件名 - 使用知识点标题或默认名称
-                const fileName = (this.currentKnowledgeItem && this.currentKnowledgeItem.name) 
-                    ? `知识图谱_${this.currentKnowledgeItem.name}.svg`
+                const fileName = (this.currentKnowledgeItem && this.currentKnowledgeItem.title) 
+                    ? `知识图谱_${this.currentKnowledgeItem.title}.svg`
                     : '知识图谱.svg';
                 
                 link.download = fileName;
@@ -1673,5 +1496,10 @@ module.exports =  {
     min-height: 65vh;
     line-height: 1.6;
     font-size: 14px;
+}
+
+.disabled-button {
+    color: #c0c4cc !important;
+    cursor: not-allowed !important;
 }
 </style> 

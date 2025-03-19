@@ -145,6 +145,8 @@
             title="知识分解"
             :visible="decompositionDialogVisible"
             width="70%"
+            :fullscreen="false"
+            custom-class="knowledge-decomposition-dialog"
             @close="closeDecompositionDialog">
             <div v-if="isLoading" class="loading-container">
                 <el-progress type="circle" :percentage="loadingPercentage" :status="loadingStatus"></el-progress>
@@ -153,7 +155,7 @@
             <div v-else>
                 <el-input
                     type="textarea"
-                    :rows="15"
+                    :rows="25"
                     placeholder="知识分解结果将在这里显示"
                     v-model="decompositionResult"
                     readonly>
@@ -720,21 +722,22 @@ module.exports =  {
                     "undoManager.isEnabled": true,  // 启用撤销/重做
                     layout: new go.TreeLayout({
                         angle: 90,  // 垂直布局
-                        nodeSpacing: 20,
-                        layerSpacing: 50,
+                        nodeSpacing: 40,  // 增加节点间距
+                        layerSpacing: 80,  // 增加层级间距
                         arrangement: go.TreeLayout.ArrangementVertical
                     }),
                     "animationManager.isEnabled": true,
                     initialContentAlignment: go.Spot.Center
                 });
                 
-                // 定义节点模板 - 根据节点层级使用不同的样式
+                // 定义节点模板 - 使用简单文本块先确保基本功能可用
                 this.myDiagram.nodeTemplate = new go.Node("Auto")
                     .add(
                         new go.Shape("RoundedRectangle", {
-                            fill: "white",
+                            fill: "white", 
                             stroke: "#333",
-                            strokeWidth: 1
+                            strokeWidth: 1,
+                            minSize: new go.Size(250, 60)  // 增加最小尺寸
                         }).bind("fill", "level", level => {
                             // 根据层级返回不同的颜色
                             const colors = [
@@ -747,16 +750,20 @@ module.exports =  {
                             return colors[Math.min(level, colors.length - 1)] || "#ffffff";
                         }),
                         new go.TextBlock({
-                            margin: 8,
-                            font: "12px sans-serif"
-                        })
-                        .bind("text", "text")
-                        .bind("font", "level", level => {
-                            // 根据层级返回不同的字体样式
-                            if (level === 0) return "bold 14px sans-serif";
-                            if (level === 1) return "bold 13px sans-serif";
-                            return `12px sans-serif`;
-                        })
+                            margin: 10,
+                            font: "12px sans-serif",
+                            stroke: "#333",
+                            wrap: go.TextBlock.WrapFit,
+                            textAlign: "left",
+                            width: 280,
+                            editable: false
+                        }).bind("text", "text")
+                         .bind("font", "level", level => {
+                             // 根据层级返回不同的字体样式
+                             if (level === 0) return "bold 15px sans-serif";
+                             if (level === 1) return "bold 14px sans-serif";
+                             return "12px sans-serif";
+                         })
                     );
                 
                 // 定义链接模板 - 简化线条
@@ -784,6 +791,8 @@ module.exports =  {
                     return;
                 }
                 
+                console.log('渲染节点数据:', nodeDataArray);
+                
                 // 设置模型数据
                 this.myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
                 
@@ -801,20 +810,57 @@ module.exports =  {
             const nodeDataArray = [];
             const linkDataArray = [];
             
+            console.log('原始数据:', data);
+            
             // 使用递归方法处理各种可能的数据结构
             const processNode = (node, parentKey = null, level = 0) => {
                 // 如果节点无效，则跳过
                 if (!node) return null;
                 
                 // 提取节点键和标题
-                const key = node.key || `node_${Math.random().toString(36).substr(2, 9)}`;
+                const key = node.key || node.kp_id || node.session || `node_${Math.random().toString(36).substr(2, 9)}`;
                 const title = node.title || node.text || node.name || node.content || '未命名节点';
+                
+                console.log('处理节点:', key, title);
+                
+                // 创建节点文本(包含details、contacts和links)
+                let nodeText = title;
+                
+                // 处理详情内容
+                if (node.details) {
+                    if (Array.isArray(node.details)) {
+                        // 如果是数组，添加概要
+                        nodeText += '\n\n详情: ' + node.details.join(' | ');
+                    } else if (typeof node.details === 'string') {
+                        nodeText += '\n\n详情: ' + node.details;
+                    }
+                }
+                
+                // 处理联系人信息
+                if (node.contacts && Array.isArray(node.contacts) && node.contacts.length > 0) {
+                    nodeText += '\n\n联系方式: ';
+                    node.contacts.forEach(contact => {
+                        if (contact.name) nodeText += contact.name + ' ';
+                        if (contact.address) nodeText += contact.address + ' ';
+                        if (contact.hours) nodeText += contact.hours;
+                    });
+                }
+                
+                // 处理链接信息
+                if (node.links && Array.isArray(node.links) && node.links.length > 0) {
+                    nodeText += '\n\n相关链接: ';
+                    node.links.forEach(link => {
+                        if (link.name) nodeText += link.name + ' ';
+                        if (link.url) nodeText += link.url;
+                    });
+                }
                 
                 // 将节点添加到节点数组
                 nodeDataArray.push({
                     key: key,
-                    text: title,
-                    level: level  // 记录节点层级以支持样式区分
+                    text: nodeText,
+                    level: level,  // 记录节点层级以支持样式区分
+                    originalData: node  // 保存原始数据，以便需要时可以访问
                 });
                 
                 // 如果有父节点，则创建连接
@@ -856,6 +902,9 @@ module.exports =  {
             
             // 开始处理根节点
             processNode(data, null, 0);
+            
+            console.log('转换后的节点数组:', nodeDataArray);
+            console.log('转换后的链接数组:', linkDataArray);
             
             return { nodeDataArray, linkDataArray };
         },
@@ -1592,5 +1641,37 @@ module.exports =  {
 
 :deep(.knowledge-graph-dialog .el-dialog__footer) {
     padding: 10px 20px;
+}
+
+/* 添加知识分解弹框样式 */
+:deep(.knowledge-decomposition-dialog) {
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep(.knowledge-decomposition-dialog.el-dialog) {
+    margin-top: 2.5vh !important;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: auto;
+    padding: 15px;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__header) {
+    padding: 15px 20px;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__footer) {
+    padding: 10px 20px;
+}
+
+:deep(.el-textarea__inner) {
+    height: 100%;
+    min-height: 65vh;
+    line-height: 1.6;
+    font-size: 14px;
 }
 </style> 

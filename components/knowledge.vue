@@ -144,7 +144,7 @@
         <el-dialog
             title="知识分解"
             :visible="decompositionDialogVisible"
-            width="80%"
+            width="70%"
             @close="closeDecompositionDialog">
             <div v-if="isLoading" class="loading-container">
                 <el-progress type="circle" :percentage="loadingPercentage" :status="loadingStatus"></el-progress>
@@ -168,10 +168,12 @@
         </el-dialog>
 
         <!-- 添加知识图谱弹框 -->
+        <!-- custom-class="fullscreen-dialog"
+        :fullscreen="true" -->
         <el-dialog
             title="知识图谱"
             :visible="graphDialogVisible"
-            width="90%"
+            width="70%"
             @close="closeGraphDialog">
             <div v-if="isGraphLoading" class="loading-container">
                 <el-progress type="circle" :percentage="graphLoadingPercentage" :status="graphLoadingStatus"></el-progress>
@@ -183,6 +185,7 @@
             <template #footer>
                 <div class="dialog-footer">
                     <el-button @click="closeGraphDialog">关闭</el-button>
+                    <el-button @click="exportGraphAsSvg">导出SVG</el-button>
                 </div>
             </template>
         </el-dialog>
@@ -284,7 +287,7 @@ module.exports =  {
             
             // 动态加载GoJS
             const script = document.createElement('script');
-            script.src = 'https://unpkg.com/gojs@2.3.5/release/go.js';
+            // script.src = 'https://unpkg.com/gojs@2.3.5/release/go.js';
             script.async = true;
             script.onload = () => {
                 this.go = window.go;
@@ -392,32 +395,202 @@ module.exports =  {
                 // 如果没有分解数据，创建一个多层级示例数据进行演示
                 const demoData = {
                     "key": "root",
-                    "title": item.title || "知识点主题",
-                    "children": [
-                        { 
-                            "key": "section1", 
-                            "title": "一级知识点1",
-                            "children": [
-                                { "key": "section1-1", "title": "二级知识点1-1" },
-                                { "key": "section1-2", "title": "二级知识点1-2" }
-                            ]
-                        },
-                        { 
-                            "key": "section2", 
-                            "title": "一级知识点2",
-                            "children": [
-                                { 
-                                    "key": "section2-1", 
-                                    "title": "二级知识点2-1",
-                                    "children": [
-                                        { "key": "section2-1-1", "title": "三级知识点2-1-1" },
-                                        { "key": "section2-1-2", "title": "三级知识点2-1-2" }
+                    "title": "基本医疗保险一档参保人门诊医保待遇",
+                    "items": [
+                        {
+                            "key": "section1",
+                            "title": "一、普通门诊统筹待遇",
+                            "items": [
+                                {
+                                    "key": "section1_1",
+                                    "title": "基本报销比例",
+                                    "details": "按照医疗机构级别不同比例支付",
+                                    "items": [
+                                        {
+                                            "key": "s1_1_1",
+                                            "title": "一级以下医疗机构",
+                                            "value": "75%"
+                                        },
+                                        {
+                                            "key": "s1_1_2",
+                                            "title": "二级医院",
+                                            "value": "65%"
+                                        },
+                                        {
+                                            "key": "s1_1_3",
+                                            "title": "三级医院",
+                                            "value": "55%"
+                                        }
                                     ]
                                 },
-                                { "key": "section2-2", "title": "二级知识点2-2" }
+                                {
+                                    "key": "section1_2",
+                                    "title": "特殊人群额外补贴",
+                                    "details": "退休人员及60岁以上居民参保人",
+                                    "value": "支付比例提高5个百分点"
+                                },
+                                {
+                                    "key": "section1_3",
+                                    "title": "非选定医疗机构就诊",
+                                    "details": "未经转诊到非选定医疗机构",
+                                    "value": "统筹基金不予支付，可由个人账户支付"
+                                }
                             ]
                         },
-                        { "key": "section3", "title": "一级知识点3" }
+                        {
+                            "key": "section2",
+                            "title": "二、普通门诊统筹支付限额",
+                            "items": [
+                                {
+                                    "key": "section2_1",
+                                    "title": "职工基本医疗保险一档参保人",
+                                    "items": [
+                                        {
+                                            "key": "s2_1_1",
+                                            "title": "总体支付限额",
+                                            "value": "不超过上上年度在岗职工年平均工资的6%（退休人员为7%）"
+                                        },
+                                        {
+                                            "key": "s2_1_2",
+                                            "title": "二级以上医院限额",
+                                            "value": "不超过上上年度在岗职工年平均工资的3%（退休人员为3.5%）"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "key": "section2_2",
+                                    "title": "职工基本医疗保险二档参保人、居民基本医疗保险参保人",
+                                    "value": "支付限额最高不超过上上年度在岗职工年平均工资的1.5%"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "section3",
+                            "title": "三、门诊诊查费",
+                            "items": [
+                                {
+                                    "key": "section3_1",
+                                    "title": "基本报销比例",
+                                    "items": [
+                                        {
+                                            "key": "s3_1_1",
+                                            "title": "一级以下医疗机构",
+                                            "value": "80%"
+                                        },
+                                        {
+                                            "key": "s3_1_2",
+                                            "title": "二级医院",
+                                            "value": "70%"
+                                        },
+                                        {
+                                            "key": "s3_1_3",
+                                            "title": "三级医院",
+                                            "value": "60%"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "key": "section3_2",
+                                    "title": "待遇限制",
+                                    "value": "门诊诊查费待遇与其他由基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "section4",
+                            "title": "四、门诊大型设备",
+                            "items": [
+                                {
+                                    "key": "section4_1",
+                                    "title": "职工基本医疗保险一档参保人",
+                                    "details": "在市内定点医疗机构门诊发生的大型医疗设备检查费用和治疗所发生的基本医疗费用",
+                                    "value": "由职工基本医疗保险统筹基金按照80%的比例支付"
+                                },
+                                {
+                                    "key": "section4_2",
+                                    "title": "待遇限制",
+                                    "value": "与其他由职工基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
+                                },
+                                {
+                                    "key": "section4_3",
+                                    "title": "适用范围",
+                                    "value": "门诊大型医疗设备检查和治疗项目范围由市医疗保障行政部门另行制定"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "section5",
+                            "title": "五、门诊特定病种待遇",
+                            "items": [
+                                {
+                                    "key": "section5_1",
+                                    "title": "门特病种分类",
+                                    "items": [
+                                        {
+                                            "key": "s5_1_1",
+                                            "title": "一类门特病种"
+                                        },
+                                        {
+                                            "key": "s5_1_2",
+                                            "title": "二类门特病种"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "key": "section5_2",
+                                    "title": "一类门特病种支付比例",
+                                    "items": [
+                                        {
+                                            "key": "s5_2_1",
+                                            "title": "连续参保时间未满12个月",
+                                            "value": "60%"
+                                        },
+                                        {
+                                            "key": "s5_2_2",
+                                            "title": "连续参保时间满12个月未满36个月",
+                                            "value": "75%"
+                                        },
+                                        {
+                                            "key": "s5_2_3",
+                                            "title": "连续参保时间满36个月",
+                                            "value": "90%"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "key": "section5_3",
+                                    "title": "二类门特病种支付比例",
+                                    "items": [
+                                        {
+                                            "key": "s5_3_1",
+                                            "title": "高血压、糖尿病药品门诊费用",
+                                            "details": "支付比例按第三十条规定执行"
+                                        },
+                                        {
+                                            "key": "s5_3_2",
+                                            "title": "签约家庭医生开具处方的高血压、糖尿病药品费用",
+                                            "value": "90%"
+                                        },
+                                        {
+                                            "key": "s5_3_3",
+                                            "title": "其他二类门特病种",
+                                            "items": [
+                                                {
+                                                    "key": "s5_3_3_1",
+                                                    "title": "职工基本医疗保险一档参保人",
+                                                    "value": "80%"
+                                                },
+                                                {
+                                                    "key": "s5_3_3_2",
+                                                    "title": "职工二档、居民参保人",
+                                                    "value": "不低于60%"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     ]
                 };
                 this.generateKnowledgeGraph(this.currentKnowledgeItem, demoData);
@@ -1086,7 +1259,57 @@ module.exports =  {
                     console.error('知识项数据不完整', item);
                 }
             });
-        }
+        },
+
+        // 导出图谱为SVG并下载
+        exportGraphAsSvg() {
+            if (!this.myDiagram) {
+                this.$message.error('图谱尚未渲染，无法导出');
+                return;
+            }
+            
+            try {
+                // 创建SVG元素
+                const svg = this.myDiagram.makeSvg({
+                    scale: 1,
+                    background: "white" // 设置背景颜色
+                });
+                
+                // 转换SVG为字符串
+                const serializer = new XMLSerializer();
+                let svgString = serializer.serializeToString(svg);
+                
+                // 添加XML声明和DOCTYPE
+                svgString = '<?xml version="1.0" encoding="utf-8"?>\n' + svgString;
+                
+                // 将SVG字符串转换为Blob
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                
+                // 设置文件名 - 使用知识点标题或默认名称
+                const fileName = (this.currentKnowledgeItem && this.currentKnowledgeItem.name) 
+                    ? `知识图谱_${this.currentKnowledgeItem.name}.svg`
+                    : '知识图谱.svg';
+                
+                link.download = fileName;
+                
+                // 模拟点击下载
+                document.body.appendChild(link);
+                link.click();
+                
+                // 清理
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                
+                this.$message.success('图谱已导出为SVG文件');
+            } catch (error) {
+                console.error('导出SVG时出错:', error);
+                this.$message.error('导出SVG失败: ' + error.message);
+            }
+        },
     }
 }
 </script>
@@ -1332,8 +1555,26 @@ module.exports =  {
 
 .graph-container {
     min-height: 500px;
+    /* height: calc(100vh - 160px); */
     border: 1px solid #e6e6e6;
     border-radius: 4px;
     background-color: #f5f7fa;
 }
+
+.el-dialog__body{
+    padding: 10px;
+}
+
+/* 添加全屏对话框样式 */
+/* :deep(.fullscreen-dialog) {
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+}
+
+:deep(.fullscreen-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+} */
 </style> 

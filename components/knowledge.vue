@@ -264,15 +264,6 @@ module.exports =  {
         // 监听搜索文本变化
         filterText(val) {
             this.$refs.tree.filter(val);
-        },
-        // 监听路由参数变化
-        '$route.query.id': {
-            handler(id) {
-                if (id) {
-                    this.loadNodeById(id);
-                }
-            },
-            immediate: true
         }
     },
     methods: {  
@@ -305,6 +296,20 @@ module.exports =  {
             this.isLoading = false;
         },
         
+        // 知识分解按钮点击事件
+        handleShowDialog1(item) {
+            this.decompositionDialogVisible = true;
+            // 确保在下一个事件循环中执行
+            this.$nextTick(() => {
+                // 开始生成知识分解
+                if (item && item.title && item.content) {
+                    this.generateDecomposition(item);
+                } else {
+                    console.error('知识项数据不完整', item);
+                }
+            });
+        },
+
         // 生成知识分解
         async generateDecomposition(item) {
             if (!item || !item.title || !item.content) {
@@ -359,6 +364,12 @@ module.exports =  {
             } catch (error) {
                 this.$message.error('生成知识分解失败: ' + error.message);
             }
+        },
+
+        // 知识分解生成后的处理
+        onDecompositionGenerated(decomposition) {
+            console.log('知识分解生成后的处理:', decomposition);
+            // 在这里可以添加处理逻辑，例如保存分解结果到数据库
         },
 
         // 保存分解结果
@@ -1186,40 +1197,7 @@ module.exports =  {
             // 重置树的当前选中节点
             this.currentNodeId = null;
         },
-        
-        // 在指定节点下添加子节点
-        appendNode(data) {
-            // 由于不需要编辑功能，此处禁用添加节点
-            this.$message({
-                type: 'info',
-                message: '当前不支持编辑功能'
-            });
-        },
-        
-        // 保存节点
-        saveNode() {
-            // 暂时不需要编辑知识点
-            this.$message({
-                type: 'info',
-                message: '当前不支持编辑功能'
-            });
-        },
-        
-        // 删除节点
-        deleteNode() {
-            // 暂时不需要编辑知识点
-            this.$message({
-                type: 'info',
-                message: '当前不支持编辑功能'
-            });
-        },
-        
-        // 根据ID加载节点
-        loadNodeById(id) {
-            // 这里实现根据ID加载节点的逻辑
-            console.log('加载节点:', id);
-        },
-        
+           
         // 获取节点图标
         getNodeIcon(data) {
             if (data.type === 'category') {
@@ -1239,26 +1217,6 @@ module.exports =  {
         // 查看知识点详情
         viewKnowledgeDetail(item) {
             this.editKnowledgeItem(item);
-        },
-        
-        // 知识分解生成后的处理
-        onDecompositionGenerated(decomposition) {
-            console.log('知识分解生成后的处理:', decomposition);
-            // 在这里可以添加处理逻辑，例如保存分解结果到数据库
-        },
-        
-        // 修改按钮点击事件
-        handleShowDialog1(item) {
-            this.decompositionDialogVisible = true;
-            // 确保在下一个事件循环中执行
-            this.$nextTick(() => {
-                // 开始生成知识分解
-                if (item && item.title && item.content) {
-                    this.generateDecomposition(item);
-                } else {
-                    console.error('知识项数据不完整', item);
-                }
-            });
         },
 
         // 导出图谱为SVG并下载

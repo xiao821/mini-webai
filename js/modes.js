@@ -2,7 +2,7 @@ import { elements, setWelcomeMessage, clearChatContainer } from './ui.js';
 import { modeConfig } from './config.js';
 import { startNewConversation, getConversationById, getCurrentConversationId } from './conversations.js';
 import { appendMessage } from './messaging.js';
-import { initKnowledgeCategory } from './knowledge_category.js';
+import { initKnowledgeCategory, clearSelectedCategory } from './knowledge_category.js';
 
 // 当前选中的模式
 let currentMode = 'default';
@@ -25,7 +25,7 @@ export async function switchMode(mode, shouldCreateNewConversation = true) {
         document.getElementById('current-mode-title').textContent = modeConfig[mode].title;
         
         // 清除当前选中的知识分类
-        // clearCategorySelection();
+        clearSelectedCategory();
         
         // 更新当前模式
         currentMode = mode;
@@ -118,14 +118,5 @@ export async function renderModeButtons() {
     if (container.firstChild) {
         // 更新标题
         document.getElementById('current-mode-title').textContent = modeConfig[currentMode].title;
-        
-        // 初始化知识分类树
-        await initKnowledgeCategory();
-        
-        // 显示欢迎消息
-        // const welcomeMessage = modeConfig[currentMode].welcomeMessage;
-        // setTimeout(() => {
-        //     appendMessage('assistant', welcomeMessage, 'first-message');
-        // }, 100);
     }
 }

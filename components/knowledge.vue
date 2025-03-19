@@ -134,7 +134,7 @@
                 <!-- 未选中节点时显示空状态 -->
                 <div v-else class="empty-state">
                     <i class="el-icon-document"></i>
-                    <p>请选择查看一个知识库条目</p>
+                    <p>请选择点击查看一个知识库条目</p>
                     <!-- <el-button type="primary" @click="createNewNode">创建新条目</el-button> -->
                 </div>
             </div>
@@ -174,6 +174,7 @@
             title="知识图谱"
             :visible="graphDialogVisible"
             width="70%"
+            custom-class="knowledge-graph-dialog"
             @close="closeGraphDialog">
             <div v-if="isGraphLoading" class="loading-container">
                 <el-progress type="circle" :percentage="graphLoadingPercentage" :status="graphLoadingStatus"></el-progress>
@@ -199,18 +200,18 @@ module.exports =  {
         return {
             // API 配置
             apiConfig: {
-                // baseUrl: 'http://172.16.99.32:1034',
-                baseUrl: 'https://lgdev.baicc.cc/',
+                baseUrl: 'http://172.16.99.32:1034',
+                // baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: 'http://172.16.99.32:1032',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
             // 新增的部门选项
             departmentOptions: [
-                { value: '龙岗政数局', label: '市监局知识库' },
+                { value: '市监知识库', label: '市监局知识库' },
                 { value: '市医保中心', label: '医保知识库' },
             ],
             // 当前选中的部门
-            selectedDepartment: '龙岗政数局',
+            selectedDepartment: '市监知识库',
             // 搜索过滤文本
             filterText: '',
             // 知识库树形数据
@@ -962,7 +963,7 @@ module.exports =  {
                 
                 // 自定义排序函数（适用于市监局知识库）
                 const sortCategories = (categories) => {
-                    if (this.selectedDepartment === '龙岗政数局') {
+                    if (this.selectedDepartment === '市监知识库') {
                         // 为市监局知识库分类添加权重
                         const categoryWeightMap = {};
                         const chineseNums = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', 
@@ -1056,7 +1057,7 @@ module.exports =  {
                 if (this.selectedDepartment === '市医保中心') {
                     // 医保知识库使用 getKnowle 接口
                     apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getKnowle/${category}`;
-                } else if (this.selectedDepartment === '龙岗政数局') {
+                } else if (this.selectedDepartment === '市监知识库') {
                     // 市监局知识库使用 getLGKnowle 接口
                     apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getLGKnowle/${category}?`;
                 }
@@ -1512,8 +1513,7 @@ module.exports =  {
 }
 
 .graph-container {
-    min-height: 500px;
-    /* height: calc(100vh - 160px); */
+    height: 75vh;
     border: 1px solid #e6e6e6;
     border-radius: 4px;
     background-color: #f5f7fa;
@@ -1521,6 +1521,31 @@ module.exports =  {
 
 .el-dialog__body{
     padding: 10px;
+}
+
+/* 添加知识图谱弹框样式 */
+:deep(.knowledge-graph-dialog) {
+    height: 75vh;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep(.knowledge-graph-dialog.el-dialog) {
+    margin-top: 2.5vh !important;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__header) {
+    padding: 15px 20px;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__footer) {
+    padding: 10px 20px;
 }
 
 /* 添加全屏对话框样式 */

@@ -84,7 +84,7 @@ export async function submitFeedback() {
         const currentMode = getCurrentMode();
         const kb_category = modeConfig[currentMode]?.kb_category || '';
         // 获取当前模式的department
-        const department = modeConfig[currentMode]?.department || '龙岗政数局';
+        const department = modeConfig[currentMode]?.department || '市监知识库';
         console.log('接口调用前的re_kb_reference', re_kb_reference);
         // 等待 API 调用完成
         await dislikefeedback(

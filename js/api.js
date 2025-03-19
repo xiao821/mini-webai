@@ -22,10 +22,10 @@ export async function fetchLgzsjKnowledgeList(mode = 'default') {
     try {
         // 从modeConfig中获取对应mode的department
         const { modeConfig } = await import('./config.js');
-        const department = modeConfig[mode]?.department || "龙岗政数局";
+        const department = modeConfig[mode]?.department || "市监知识库";
         
-        const response = await axios.get(`${API_BASE_URL}/api/query_kb_category`, {
-            params: { 'department': department },
+        const response = await axios.get(`${API_BASE_URL}/api/department_taxonomy`, {
+            params: { 'department_name': department },
             headers: { 'Authorization': API_AUTH_TOKEN }    
         });
         return response.data || [];
@@ -198,7 +198,7 @@ export async function dislikefeedback(currentMessageRAG, MessageHistory, message
     try {
         // 获取department参数，如果没有传入则从配置中获取默认值
         const { modeConfig } = await import('./config.js');
-        const useDepartment = department || modeConfig[model]?.department || "龙岗政数局";
+        const useDepartment = department || modeConfig[model]?.department || "市监知识库";
         
         // 准备请求数据
         const requestData = {
@@ -247,6 +247,19 @@ export async function fetchFeedbackList() {
         throw error;
     }
 }
+
+// 获取部门分类的数据
+export async function fetchDepartmentCategory() {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/departments`, {
+            headers: { 'Authorization': API_AUTH_TOKEN }
+        });
+        return response || [];
+    } catch (error) {
+        console.error('获取部门分类数据失败:', error);
+        throw error;
+    }
+} 
 // 修改为 CommonJS 导出
 // module.exports = {
 //     fetchFeedbackList: async function() {

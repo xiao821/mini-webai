@@ -1,5 +1,5 @@
 import { fetchLgzsjKnowledgeList } from './api.js';
-import { modeConfig } from './config.js';
+import { modeConfig, departmentCategory } from './config.js';
 import { getCurrentMode } from './modes.js';
 
 let selectedCategory = null;
@@ -14,9 +14,12 @@ const selectedCategoryBreadcrumb = document.getElementById('selected-category-br
 // 初始化知识分类树
 export async function initKnowledgeCategory() {
     try {
+        // 等待部门数据更新完成
+        await departmentCategory;
+        
         // 获取当前模式
         const currentMode = getCurrentMode();
-        const department = modeConfig[currentMode]?.department || "龙岗政数局";
+        const department = modeConfig[currentMode]?.department || "市监知识库";
         
         // 显示加载状态
         categoryTreeElement.innerHTML = `<div class="text-sm text-gray-500 animate-pulse">正在加载${department}知识库分类...</div>`;
@@ -29,51 +32,16 @@ export async function initKnowledgeCategory() {
         
         // 获取知识分类数据，传入当前模式
         const data = await fetchLgzsjKnowledgeList(currentMode);
-        console.log(`${currentMode}知识库列表`, data);
+        console.log(`${department}知识库列表`, data);
         
-        if (data && Array.isArray(data) && data.length > 0) {
-            // 对数据进行排序
-            const sortedData = sortCategoryData(data);
-            renderCategoryTree(sortedData);
+        if (data && data.items) {
+            // 直接渲染数据
+            renderCategoryTree(data);
             
             // 检查当前模式是否有选中的分类
             if (modeConfig[currentMode] && modeConfig[currentMode].kb_category) {
-                // 检查选中的分类是否为子分类
                 const categoryName = modeConfig[currentMode].kb_category;
-                let isSubcategory = false;
-                
-                // 遍历所有分类，检查是否为子分类
-                sortedData.forEach(item => {
-                    const mainCategory = Object.keys(item)[0];
-                    const categories = item[mainCategory];
-                    
-                    categories.forEach(category => {
-                        if (category.category3 && Array.isArray(category.category3)) {
-                            category.category3.forEach(subcat => {
-                                if (subcat === categoryName) {
-                                    isSubcategory = true;
-                                }
-                            });
-                        }
-                    });
-                });
-                
-                // 只有是子分类时才设置为选中状态
-                if (isSubcategory) {
-                    selectCategory(categoryName);
-                } else {
-                    // 如果不是子分类，清除选中状态
-                    selectedCategory = null;
-                    selectedCategoryElement.textContent = '无';
-                    selectedCategoryTextElement.textContent = '';
-                    modeConfig[currentMode].kb_category = '';
-                    
-                    // 隐藏叉号按钮和面包屑分隔符
-                    clearCategoryButton.style.display = 'none';
-                    clearCategoryTopButton.style.display = 'none';
-                    breadcrumbSeparator.style.display = 'none';
-                    selectedCategoryBreadcrumb.style.display = 'none';
-                }
+                selectCategory(categoryName);
             } else {
                 // 如果没有选中分类，隐藏叉号按钮和面包屑分隔符
                 clearCategoryButton.style.display = 'none';
@@ -95,11 +63,14 @@ export async function initKnowledgeCategory() {
 }
 
 // 清除选中的分类
-function clearSelectedCategory(e) {
-    e.stopPropagation();
+export function clearSelectedCategory(e) {
+    // 如果是事件调用，阻止事件冒泡
+    if (e && e.stopPropagation) {
+        e.stopPropagation();
+    }
     
     // 移除所有已选中的样式
-    document.querySelectorAll('.subcategory-item.active').forEach(el => {
+    document.querySelectorAll('.category-item.active').forEach(el => {
         el.classList.remove('active');
     });
     
@@ -186,95 +157,118 @@ function sortCategoryData(data) {
     return clonedData;
 }
 
+// 递归渲染分类树
+function renderCategoryNode(node, parentElement, depth = 0) {
+    if (!node || !node.items || node.items.length === 0) return;
+
+    // 过滤空项
+    const validItems = node.items.filter(item => item && item.key && item.key.trim() !== '');
+    
+    validItems.forEach(item => {
+        const categoryElement = document.createElement('div');
+        categoryElement.className = 'category-item';
+        
+        // 检查是否有子项，并过滤掉空子项
+        let validChildren = [];
+        if (item.items && item.items.length > 0) {
+            validChildren = item.items.filter(child => child && child.key && child.key.trim() !== '');
+        }
+        const hasChildren = validChildren.length > 0;
+        
+        if (hasChildren) {
+            // 检查是否是最后第二级 - 判断下级是否有叶子节点
+            const isSecondToLastLevel = validChildren.some(child => !child.items || child.items.length === 0);
+            
+            // 非叶子节点，根据层级决定是否默认展开
+            categoryElement.innerHTML = `
+                <div class="flex items-center">
+                    <span class="category-toggle ${isSecondToLastLevel ? '' : 'expanded'}">▶</span>
+                    <span>${item.key}</span>
+                </div>
+            `;
+            
+            // 添加点击事件
+            categoryElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const toggle = categoryElement.querySelector('.category-toggle');
+                toggle.classList.toggle('expanded');
+                
+                const subcategoryContainer = categoryElement.nextElementSibling;
+                if (subcategoryContainer && subcategoryContainer.classList.contains('subcategory-container')) {
+                    subcategoryContainer.style.display = toggle.classList.contains('expanded') ? 'block' : 'none';
+                }
+            });
+        } else {
+            // 叶子节点
+            categoryElement.innerHTML = `
+                <div class="flex items-center">
+                    <span class="ml-5">${item.key}</span>
+                </div>
+            `;
+            
+            // 添加点击事件
+            categoryElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectCategory(item.key);
+            });
+        }
+        
+        parentElement.appendChild(categoryElement);
+        
+        // 如果有子项，创建子分类容器
+        if (hasChildren) {
+            const subcategoryContainer = document.createElement('div');
+            subcategoryContainer.className = 'subcategory-container';
+            
+            // 检查是否是最后第二级，决定是否默认展开
+            const isSecondToLastLevel = validChildren.some(child => !child.items || child.items.length === 0);
+            subcategoryContainer.style.display = isSecondToLastLevel ? 'none' : 'block';
+            
+            // 创建一个新对象，包含过滤后的子项
+            const filteredNode = {
+                items: validChildren
+            };
+            
+            // 递归渲染子项
+            renderCategoryNode(filteredNode, subcategoryContainer, depth + 1);
+            
+            parentElement.appendChild(subcategoryContainer);
+        }
+    });
+}
+
 // 渲染知识分类树
 function renderCategoryTree(treeData) {
     // 清空现有内容
     categoryTreeElement.innerHTML = '';
     
-    // 遍历数据
-    treeData.forEach(item => {
-        // 获取主分类名称（如"龙岗政数局"）
-        const mainCategory = Object.keys(item)[0];
-        const categories = item[mainCategory];
+    // 过滤掉空数据
+    if (treeData && treeData.items) {
+        // 过滤掉空的项
+        treeData.items = treeData.items.filter(item => item && item.key && item.key.trim() !== '');
         
-        // 直接遍历二级分类，跳过主分类的显示
-        categories.forEach(category => {
-            const categoryElement = document.createElement('div');
-            categoryElement.className = 'category-item';
-            
-            // 创建分类标题
-            const hasChildren = category.category3 && category.category3.length > 0;
-            
-            if (hasChildren) {
-                categoryElement.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="category-toggle">▶</span>
-                        <span>${category.category2}</span>
-                    </div>
-                `;
-            } else {
-                categoryElement.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="ml-5">${category.category2}</span>
-                    </div>
-                `;
-            }
-            
-            // 添加点击事件
-            categoryElement.addEventListener('click', (e) => {
-                // 阻止事件冒泡
-                e.stopPropagation();
-                
-                // 只处理展开/折叠状态，不选中主分类
-                if (hasChildren) {
-                    const toggle = categoryElement.querySelector('.category-toggle');
-                    toggle.classList.toggle('expanded');
-                    
-                    const subcategoryContainer = categoryElement.nextElementSibling;
-                    if (subcategoryContainer && subcategoryContainer.classList.contains('subcategory-container')) {
-                        subcategoryContainer.style.display = toggle.classList.contains('expanded') ? 'block' : 'none';
-                    }
-                }
-            });
-            
-            categoryTreeElement.appendChild(categoryElement);
-            
-            // 如果有子分类，创建子分类容器
-            if (hasChildren) {
-                const subcategoryContainer = document.createElement('div');
-                subcategoryContainer.className = 'subcategory-container';
-                
-                // 默认隐藏子分类
-                subcategoryContainer.style.display = 'none';
-                
-                // 渲染子分类
-                category.category3.forEach(subcategory => {
-                    // 跳过空字符串
-                    if (!subcategory) return;
-                    
-                    const subcategoryElement = document.createElement('div');
-                    subcategoryElement.className = 'subcategory-item';
-                    subcategoryElement.textContent = subcategory;
-                    
-                    // 添加点击事件
-                    subcategoryElement.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectCategory(subcategory);
-                    });
-                    
-                    subcategoryContainer.appendChild(subcategoryElement);
-                });
-                
-                categoryTreeElement.appendChild(subcategoryContainer);
+        // 对于有子项的节点，递归过滤
+        treeData.items.forEach(item => {
+            if (item.items && Array.isArray(item.items)) {
+                item.items = item.items.filter(subItem => subItem && subItem.key && subItem.key.trim() !== '');
             }
         });
-    });
+        
+        // 如果过滤后没有数据
+        if (treeData.items.length === 0) {
+            categoryTreeElement.innerHTML = '<div class="text-sm text-gray-500">暂无分类数据</div>';
+            return;
+        }
+    }
+    
+    // 使用新的递归渲染函数
+    renderCategoryNode(treeData, categoryTreeElement);
 }
 
 // 选中分类
 function selectCategory(categoryName) {
     // 移除所有已选中的样式
-    document.querySelectorAll('.subcategory-item.active').forEach(el => {
+    document.querySelectorAll('.category-item.active').forEach(el => {
         el.classList.remove('active');
     });
     
@@ -295,27 +289,38 @@ function selectCategory(categoryName) {
         return;
     }
     
-    // 只查找并添加子分类的选中样式
-    const subcategoryElements = document.querySelectorAll('.subcategory-item');
-    
+    // 查找并添加分类的选中样式
+    const categoryElements = document.querySelectorAll('.category-item');
     let found = false;
+    let breadcrumbPath = [];
     
-    // 检查子分类
-    subcategoryElements.forEach(el => {
-        if (el.textContent === categoryName) {
+    // 遍历所有分类元素
+    categoryElements.forEach(el => {
+        const nameSpan = el.querySelector('span:not(.category-toggle)');
+        if (nameSpan && nameSpan.textContent === categoryName) {
             el.classList.add('active');
             found = true;
+            
+            // 构建面包屑路径
+            let currentEl = el;
+            while (currentEl && currentEl.classList.contains('category-item')) {
+                const text = currentEl.querySelector('span:not(.category-toggle)')?.textContent;
+                if (text) {
+                    breadcrumbPath.unshift(text);
+                }
+                currentEl = currentEl.parentElement?.closest('.category-item');
+            }
         }
     });
     
-    // 只有找到子分类时才更新选中状态
+    // 更新选中状态
     if (found) {
         // 更新选中的分类
         selectedCategory = categoryName;
         
         // 更新UI显示
         selectedCategoryElement.textContent = categoryName;
-        selectedCategoryTextElement.textContent = categoryName;
+        selectedCategoryTextElement.textContent = breadcrumbPath.join(' / ');
         
         // 显示叉号按钮和面包屑分隔符
         clearCategoryButton.style.display = 'inline-block';

@@ -26,10 +26,10 @@ export async function handleFeedback(messageId, type) {
     if (typeof kb_reference === 'string') {
       try {
         re_kb_reference = JSON.parse(kb_reference); // 将字符串解析为数组
-        console.log('re_kb_reference', messageId, re_kb_reference);    
+        console.log('re_kb_reference', re_kb_reference);    
       } catch (error) {
         console.error('Failed to parse kb_reference:', error);
-        re_kb_reference = null; // 解析失败时设置为null
+        // re_kb_reference = null; // 解析失败时设置为null
       }
     } else {
       re_kb_reference = kb_reference; // 如果不是字符串，直接使用
@@ -85,7 +85,7 @@ export async function submitFeedback() {
         const kb_category = modeConfig[currentMode]?.kb_category || '';
         // 获取当前模式的department
         const department = modeConfig[currentMode]?.department || '龙岗政数局';
-
+        console.log('接口调用前的re_kb_reference', re_kb_reference);
         // 等待 API 调用完成
         await dislikefeedback(
             re_kb_reference, 

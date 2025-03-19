@@ -194,7 +194,9 @@
             title="反馈详情" 
             :visible="dialogVisible"
             width="70%"
-            @close="handleDialogClose">
+            @close="handleDialogClose"
+            center
+            custom-class="feedback-detail-dialog">
             <div v-if="currentFeedback" class="feedback-detail">
                 <div class="detail-item">
                     <label>提交时间：</label>
@@ -342,8 +344,8 @@
                     </div>
                     
                     <!-- 添加AI生成的回答区域 -->
-                    <div v-if="generatedAnswer" class="generated-answer-section">
-                        <el-divider>AI生成的回答</el-divider>
+                    <div class="generated-answer-section" v-if="AIAnswer">
+                        <el-divider>AI重新生成的回答</el-divider>
                         <div class="generated-answer-content" v-html="renderedGeneratedAnswer"></div>
                     </div>
                     
@@ -463,9 +465,9 @@
 
 <script type="module">
 // const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
-// const baseUrl = '/nlprag/';
-const baseUrl = 'https://lgdev.baicc.cc/';
 // const baseUrl = 'http://172.16.99.32:1034';
+// const baseUrl = 'https://lgdev.baicc.cc/';
+const baseUrl = 'http://172.16.99.32:1034';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
 module.exports = {
@@ -479,12 +481,14 @@ module.exports = {
                 dateRange: [],
                 status: ''
             },
+            // AI回答
+            AIAnswer: false,
             // 统计数据
             stats: {
-                today: 12,
-                week: 85,
-                month: 346,
-                pending: 24
+                today: 4,
+                week: 12,
+                month: 22,
+                pending: 8
             },
             // 反馈类型列表
             feedbackTypes: [],
@@ -590,7 +594,8 @@ module.exports = {
             try {
                 const response = await axios.get(`${baseUrl}/api/feedbackType`, {
                     headers: {
-                        'Authorization': API_AUTH_TOKEN
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
                     }
                 });
                 if (response.data && response.data.feedback_list) {
@@ -635,7 +640,8 @@ module.exports = {
 
                 const response = await axios.get(`${baseUrl}/api/feedback/getDataByPage/`,{
                     headers: {
-                        'Authorization': API_AUTH_TOKEN
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
                     },
                     params: params
                 });
@@ -655,13 +661,13 @@ module.exports = {
                 this.tableData = response.data.feedback_list.map(feedback => {
                     const aiAnswerIndex = feedback.current_message || [];
                     
-                    // 过滤掉```之间的内容
+                    // 将```思考过程 替换为<a>，结尾的```替换为</a>
                     let filteredAnswer = aiAnswerIndex;
                     if (Array.isArray(aiAnswerIndex)) {
                         filteredAnswer = aiAnswerIndex;
                     } else if (typeof aiAnswerIndex === 'string') {
-                        // 使用正则表达式过滤掉```之间的内容
-                        filteredAnswer = aiAnswerIndex.replace(/```[\s\S]*?```/g, '');
+                        // 使用正则表达式替换```思考过程为<a>和结尾```为</a>
+                        filteredAnswer = aiAnswerIndex.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
                     }
                     
                     // 从conversation_messages找到用户的问题
@@ -749,7 +755,12 @@ module.exports = {
             // 使用markdown-it渲染AI回答中的markdown内容
             if (row.ai_answer && this.md) {
                 try {
-                    this.renderedAIAnswer = this.md.render(row.ai_answer);
+                    let processedAnswer = row.ai_answer;
+                    // 替换思考过程标记为HTML标签(/```思考过程/g, '<think>').replace(/```/g, '</think>')
+                    if (typeof processedAnswer === 'string') {
+                        processedAnswer = processedAnswer.replace(/```思考过程/g, '<a class="thinking-process">').replace(/```/g, '</a>');
+                    }
+                    this.renderedAIAnswer = this.md.render(processedAnswer);
                 } catch (error) {
                     console.error('Markdown渲染失败:', error);
                     this.renderedAIAnswer = row.ai_answer;
@@ -779,7 +790,12 @@ module.exports = {
             // 渲染AI回答
             if (row.ai_answer && this.md) {
                 try {
-                    this.renderedKnowledgeAIAnswer = this.md.render(row.ai_answer);
+                    let processedAnswer = row.ai_answer;
+                    // 替换思考过程标记为HTML标签
+                    if (typeof processedAnswer === 'string') {
+                        processedAnswer = processedAnswer.replace(/```思考过程/g, '<think class="thinking-process">').replace(/```/g, '</think>');
+                    }
+                    this.renderedKnowledgeAIAnswer = this.md.render(processedAnswer);
                 } catch (error) {
                     console.error('Markdown渲染失败:', error);
                     this.renderedKnowledgeAIAnswer = row.ai_answer;
@@ -804,7 +820,7 @@ module.exports = {
                     // 根据选择的部门获取知识点内容
                     let knowledgeContent = [];
                     
-                    if (this.selectedDepartment === '市医保中心') {
+                    if (row.department === '市医保中心') {
                         knowledgeContent = await this.fetchKnowledgeContent(kbIds);
                     } else {
                         knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
@@ -1058,12 +1074,7 @@ module.exports = {
                 } else if (this.selectedDepartment === '龙岗政数局') {
                     // 市监局知识库使用 getLGKnowle 接口
                     apiUrl = `${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
-                } else {
-                    // 如果是其他部门，默认使用龙岗政数局的接口
-                    apiUrl = `${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
                 }
-                
-                console.log('知识点请求URL:', apiUrl);
                 
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -1475,7 +1486,12 @@ module.exports = {
             if (!this.md) return content;
             
             try {
-                return this.md.render(content);
+                let processedContent = content;
+                // 替换思考过程标记为HTML标签
+                if (typeof processedContent === 'string') {
+                    processedContent = processedContent.replace(/```思考过程/g, '<think class="thinking-process">').replace(/```/g, '</think>');
+                }
+                return this.md.render(processedContent);
             } catch (error) {
                 console.error('Markdown渲染失败:', error);
                 return content;
@@ -1512,7 +1528,7 @@ module.exports = {
             
             if (row.kb_reference && Array.isArray(row.kb_reference)) {
                 //TODO: 需要修改  row.department === '市医保中心'
-                if (this.selectedDepartment === '市医保中心') {
+                if (row.department === '市医保中心') {
                     // 提取所有的 kb_id
                     const kgids = row.kb_reference.map(item => item.kb_id);
                     
@@ -1644,15 +1660,21 @@ module.exports = {
                     });
                 }
 
+                // 生成UUID作为chat_id
+                const uuid = this.generateUUID();
+
                 // 构建请求数据
                 const requestData = {
                     model: this.currentFeedbackForKnowledge.model_name,
-                    messages: this.currentFeedbackForKnowledge.user_question,
+                    messages: [{
+                        role: 'user',
+                        content: this.currentFeedbackForKnowledge.user_question
+                    }],
                     kb_reference: kb_reference,
                     max_tokens: 10240,
                     temperature: 0.6,
                     stream: true,
-                    // chat_id: this.currentFeedbackForKnowledge.md_id || `chat-${Date.now()}`,
+                    chat_id: uuid,
                     // TODO: 需要修改
                     department: this.currentFeedbackForKnowledge.department,
                     kb_category: this.currentFeedbackForKnowledge.category
@@ -1660,34 +1682,8 @@ module.exports = {
 
                 console.log('AI生成请求数据:', requestData);
 
-                // 创建响应处理器
-                const processStream = (response) => {
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    
-                    return new ReadableStream({
-                        async start(controller) {
-                            try {
-                                while (true) {
-                                    const { done, value } = await reader.read();
-                                    
-                                    if (done) {
-                                        controller.close();
-                                        break;
-                                    }
-                                    
-                                    const chunk = decoder.decode(value, { stream: true });
-                                    controller.enqueue(chunk);
-                                }
-                            } catch (error) {
-                                controller.error(error);
-                            }
-                        }
-                    });
-                };
-
                 // 发送请求并处理流式响应
-                const response = await fetch(`${baseUrl}/v1/chat/completions/time`, {
+                const response = await fetch(`${baseUrl}/v1/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
@@ -1700,47 +1696,136 @@ module.exports = {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const stream = await processStream(response);
-                const reader = stream.getReader();
+                // 获取响应流读取器
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                
+                let fullContent = "";
+                let accumulatedContent = "";
+                let jsonBuffer = ""; // 添加JSON缓冲区
+                let currentEvent = null;
+                let knowledgeData = [];  // 存储knowledge事件数据
 
+                // 通过reader.read()处理流式响应
                 while (true) {
                     const { done, value } = await reader.read();
-                    
+
                     if (done) {
                         break;
                     }
-                    
-                    // 处理接收到的数据块
-                    const chunks = value.split('\n').filter(chunk => chunk.trim());
-                    
-                    for (const chunk of chunks) {
-                        try {
-                            if (chunk.startsWith('data: ')) {
-                                const jsonStr = chunk.slice(6);
-                                if (jsonStr === '[DONE]') {
-                                    continue;
-                                }
-                                const jsonData = JSON.parse(jsonStr);
-                                if (jsonData.choices && jsonData.choices[0].delta.content) {
-                                    const content = jsonData.choices[0].delta.content;
-                                    this.streamResponse += content;
-                                    this.currentStreamChunk = this.streamResponse;
-                                    
-                                    // 实时渲染Markdown
-                                    if (this.md) {
-                                        this.renderedGeneratedAnswer = this.md.render(this.streamResponse);
+
+                    this.AIAnswer = true;
+                    // 解码二进制数据为文本
+                    const chunk = decoder.decode(value, { stream: true });
+
+                    // 处理包含"data:"前缀的流式数据
+                    const lines = chunk.split("\n");
+                    for (const line of lines) {
+                        if (line.startsWith("event:")) {
+                            currentEvent = line.substring(6).trim();
+                            continue;
+                        }
+                        if (line.startsWith("data:")) {
+                            let jsonStr = line.substring(5).trim();
+                            if (!jsonStr) continue;
+                            if (jsonStr.includes("DONE")) continue;
+
+                            // 处理knowledge事件数据
+                            if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
+                                console.log("收到 knowledge 数据块:", jsonStr);
+                                try {
+                                    // 尝试解析JSON字符串
+                                    const knowledgeItem = JSON.parse(jsonStr);
+                                    // 如果 knowledgeItem 是数组，展开它；如果是单个对象，直接添加
+                                    if (Array.isArray(knowledgeItem)) {
+                                        knowledgeData.push(...knowledgeItem);
                                     } else {
-                                        this.renderedGeneratedAnswer = this.streamResponse;
+                                        knowledgeData.push(knowledgeItem);
                                     }
+                                } catch (e) {
+                                    console.error("解析knowledge数据失败:", e, "数据:", jsonStr);
                                 }
+                                continue;
                             }
-                        } catch (error) {
-                            console.error('处理数据块时出错:', error);
+
+                            // 处理可能被分割的JSON
+                            if (!jsonStr.startsWith("{") && jsonBuffer) {
+                                // 这可能是前一个JSON的继续
+                                jsonBuffer += jsonStr;
+                                jsonStr = jsonBuffer;
+                            } else if (jsonStr.startsWith("{") && !jsonStr.endsWith("}")) {
+                                // 这是一个新的不完整JSON
+                                jsonBuffer = jsonStr;
+                                continue;
+                            } else if (jsonStr.startsWith("{") && jsonStr.endsWith("}")) {
+                                // 完整的JSON，重置缓冲区
+                                jsonBuffer = "";
+                            }
+
+                            try {
+                                // 检查JSON字符串是否完整
+                                if (jsonStr.endsWith('}') || jsonStr.endsWith(']')) {
+                                    const data = JSON.parse(jsonStr);
+
+                                    // 从流中提取内容
+                                    if (data.choices && data.choices.length > 0 && data.choices[0].delta) {
+                                        const delta = data.choices[0].delta;
+
+                                        // 如果有内容，添加到累积内容中
+                                        if (delta.content) {
+                                            const content = delta.content;
+
+                                            fullContent += content;
+                                            accumulatedContent += content;
+
+                                            // 立即更新UI显示
+                                            if (this.md) {
+                                                this.renderedGeneratedAnswer = this.md.render(fullContent);
+                                            } else {
+                                                this.renderedGeneratedAnswer = fullContent;
+                                            }
+
+                                            // 避免过于频繁的渲染导致性能问题
+                                            if (accumulatedContent.length > 10 || content.includes("\n")) {
+                                                accumulatedContent = "";
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // 如果JSON不完整，记录但不抛出错误
+                                    console.warn("收到不完整的JSON数据，跳过此块:", jsonStr);
+                                }
+                            } catch (e) {
+                                console.error("解析流式数据失败:", e, "数据:", jsonStr);
+                                // 不中断流程，继续处理下一块数据
+                            }
                         }
                     }
                 }
 
-                this.generatedAnswer = this.streamResponse;
+                // 确保解码器刷新所有剩余内容
+                decoder.decode();
+                
+                // 处理可能剩余在缓冲区的JSON数据
+                if (jsonBuffer && jsonBuffer.endsWith('}')) {
+                    try {
+                        const data = JSON.parse(jsonBuffer);
+                        if (data.choices && data.choices.length > 0 && data.choices[0].delta && data.choices[0].delta.content) {
+                            const content = data.choices[0].delta.content;
+                            fullContent += content;
+                            if (this.md) {
+                                this.renderedGeneratedAnswer = this.md.render(fullContent);
+                            } else {
+                                this.renderedGeneratedAnswer = fullContent;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("处理剩余缓冲区数据失败:", e);
+                    }
+                    jsonBuffer = "";
+                }
+
+                this.generatedAnswer = fullContent;
                 this.$message.success('回答生成成功');
                 
                 // 确保生成的回答区域可见
@@ -1831,6 +1916,12 @@ module.exports = {
                 // this.$message.error('获取知识点内容失败');
                 return [];
             }
+        },
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
         }
     },
     mounted() {
@@ -1931,6 +2022,8 @@ module.exports = {
 
 .feedback-detail {
     padding: 10px 20px;
+    max-height: calc(90vh - 150px);
+    overflow-y: auto;
 }
 
 .detail-item {
@@ -2260,8 +2353,8 @@ module.exports = {
 }
 
 .generated-answer-content {
-    line-height: 1.6;
-    white-space: pre-wrap;
+    /* line-height: 1.6;
+    white-space: pre-wrap; */
     max-height: 300px;
     overflow-y: auto;
     padding: 10px;
@@ -2402,5 +2495,44 @@ module.exports = {
     line-height: 1.6;
     padding: 10px;
     white-space: normal; /* 确保文本自动换行 */
+}
+
+/* 思考过程样式 */
+.thinking-process {
+    display: inline-block;
+    background-color: #f0f9eb;
+    color: #67c23a;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border-left: 3px solid #67c23a;
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+/* 自定义反馈详情弹框样式 */
+.feedback-detail-dialog {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    margin-top: 5vh !important;
+}
+
+.feedback-detail-dialog .el-dialog__body {
+    overflow: hidden;
+    padding: 0;
+}
+
+/* 滚动条样式 */
+.feedback-detail::-webkit-scrollbar {
+    width: 6px;
+}
+
+.feedback-detail::-webkit-scrollbar-thumb {
+    background-color: #c0c4cc;
+    border-radius: 3px;
+}
+
+.feedback-detail::-webkit-scrollbar-track {
+    background-color: #f5f7fa;
 }
 </style>

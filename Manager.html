@@ -73,10 +73,10 @@
                         <i class="el-icon-document"></i>
                         <span slot="title">知识库</span>
                     </el-menu-item>
-                    <el-menu-item index="/voice_list">
+                    <!-- <el-menu-item index="/voice_list">
                         <i class="el-icon-document"></i>
                         <span slot="title">录音数据</span>
-                    </el-menu-item>
+                    </el-menu-item> -->
                     <el-menu-item index="/batchText">
                         <i class="el-icon-document"></i>
                         <span slot="title">批量测试</span>
@@ -106,10 +106,10 @@
                 path: '/knowledge',
                 component: httpVueLoader('components/knowledge.vue')
             },
-            {
-                path: '/voice_list',
-                component: httpVueLoader('components/voice_list.vue')
-            },
+            // {
+            //     path: '/voice_list',
+            //     component: httpVueLoader('components/voice_list.vue')
+            // },
             {
                 path: '/batchText',
                 component: httpVueLoader('components/batchText.vue')

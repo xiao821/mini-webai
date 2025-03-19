@@ -194,7 +194,7 @@ export function record_voice(audioBlob) {
 
 // post点踩进行反馈
 export async function dislikefeedback(currentMessageRAG, MessageHistory, messageContent, type, detail, kb_category, model, department) {
-    // console.log('dislikefeedback', USER_ID, currentMessageRAG, kb_category, model, department);
+    console.log('传入接口中的kb_reference' ,currentMessageRAG);
     try {
         // 获取department参数，如果没有传入则从配置中获取默认值
         const { modeConfig } = await import('./config.js');
@@ -202,13 +202,13 @@ export async function dislikefeedback(currentMessageRAG, MessageHistory, message
         
         // 准备请求数据
         const requestData = {
-            kb_reference: currentMessageRAG, // 参考知识点
-            conversation_messages: MessageHistory, // 对话历史
-            current_message: messageContent, // 当前消息
-            feedback_type: type, // 反馈类型
-            detail: detail, // 反馈详情
+            kb_reference: currentMessageRAG || [], // 参考知识点
+            conversation_messages: MessageHistory || [], // 对话历史
+            current_message: messageContent || '', // 当前消息
+            feedback_type: type || '', // 反馈类型
+            detail: detail || '', // 反馈详情
             user_id: USER_ID, // 用户ID
-            category: kb_category, // 知识分类
+            category: kb_category || '', // 知识分类
             model_name: model, // 模型
             department: useDepartment // 知识库类别
         };

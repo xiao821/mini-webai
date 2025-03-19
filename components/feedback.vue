@@ -587,13 +587,17 @@ module.exports = {
         selectedDepartment(val) {
             // 当部门变化时，重新获取知识库分类
             this.currentDepartmentName = val;
-            this.fetchKnowledgeTaxonomy();
+            // 只在知识库对话框打开时才去获取分类，避免不必要的请求
+            if (this.knowledgeDialogVisible) {
+                this.fetchKnowledgeTaxonomy();
+            }
         },
         // 监听知识标注对话框显示状态
         knowledgeDialogVisible(val) {
             if (val) {
-                // 当打开对话框时，先获取部门列表，再获取知识库分类
+                // 当打开对话框时，先获取部门列表
                 this.fetchDepartments();
+                // 对话框打开后，等获取到部门列表再获取知识库分类，避免同时发送两个请求
             }
         }
     },
@@ -824,8 +828,10 @@ module.exports = {
                     
                     if (row.department === '市医保中心') {
                         knowledgeContent = await this.fetchKnowledgeContent(kbIds);
-                    } else {
+                    } else if (row.department === '市监知识库') {
                         knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
+                    } else if (row.department === '政务中心') {
+                        knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
                     }
                     
                     console.log('获取到的知识点内容:', knowledgeContent);
@@ -895,7 +901,7 @@ module.exports = {
                         this.currentDepartmentName = this.selectedDepartment;
                     }
                     
-                    // 获取第一个部门的分类结构
+                    // 这里不再自动获取知识分类结构，只在需要时才获取
                     this.fetchKnowledgeTaxonomy();
                 } else {
                     this.$message.warning('获取部门列表为空或数据格式不正确');
@@ -1185,7 +1191,8 @@ module.exports = {
                 this.currentPreviewNode = {
                     id: data.id,
                     label: data.label,
-                    type: 'category'
+                    type: 'category',
+                    path: data.path || [data.key] // 确保保存路径
                 };
                 
                 // 如果该节点没有子节点，尝试获取知识点
@@ -1219,138 +1226,145 @@ module.exports = {
                     isSelected: this.currentPreviewNode.isSelected,
                     path: data.path
                 });
-                
-                // 如果节点没有内容，尝试获取知识点详情
-                if (!data.content && data.path) {
-                    this.fetchKnowledgeDetail(data);
+                // 将最后一级分类传给不同的接口
+                if (this.selectedDepartment === '市医保中心') {
+                // 调用市医保中心的接口
+                    this.fetchSjjKnowledge(data.key);
+                }else if (this.selectedDepartment === '市监知识库') {
+                    // 调用市监知识库的接口
+                    this.fetchLGKnowledge(data.key);
                 }
+                // 如果节点没有内容，尝试获取知识点详情
+                // if (!data.content && data.path) {
+                //     this.fetchKnowledgeDetail(data);
+                // }
             }
         },
         
         // 根据路径获取知识点列表
-        async fetchKnowledgeByPath(path) {
-            if (!path || !Array.isArray(path) || path.length === 0) {
-                console.warn('知识点路径无效:', path);
-                return;
-            }
+        // async fetchKnowledgeByPath(path) {
+        //     if (!path || !Array.isArray(path) || path.length === 0) {
+        //         console.warn('知识点路径无效:', path);
+        //         return;
+        //     }
             
-            try {
-                console.log(`获取路径 ${path.join('/')} 下的知识点`);
+        //     try {
+        //         console.log(`获取路径 ${path.join('/')} 下的知识点`);
                 
-                // 构建查询参数
-                const queryParams = new URLSearchParams({
-                    department_name: this.currentDepartmentName,
-                    path: path.join('/')
-                });
+        //         // 构建查询参数
+        //         const queryParams = new URLSearchParams({
+        //             department_name: this.currentDepartmentName,
+        //             path: path.join('/')
+        //         });
                 
-                const response = await fetch(`${baseUrl}/api/knowledge_items?${queryParams.toString()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': API_AUTH_TOKEN,
-                        'Content-Type': 'application/json'
-                    }
-                });
+        //         const response = await fetch(`${baseUrl}/api/knowledge_items?${queryParams.toString()}`, {
+        //             method: 'GET',
+        //             headers: {
+        //                 'Authorization': API_AUTH_TOKEN,
+        //                 'Content-Type': 'application/json'
+        //             }
+        //         });
                 
-                if (!response.ok) {
-                    throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
-                }
+        //         if (!response.ok) {
+        //             throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
+        //         }
                 
-                const data = await response.json();
-                console.log(`获取到的知识点数据:`, data);
+        //         const data = await response.json();
+        //         console.log(`获取到的知识点数据:`, data);
                 
-                if (data && data.items && Array.isArray(data.items)) {
-                    // 找到对应路径的节点
-                    const parentNode = this.findNodeByPath(this.knowledgeTree, path);
+        //         if (data && data.items && Array.isArray(data.items)) {
+        //             // 找到对应路径的节点
+        //             const parentNode = this.findNodeByPath(this.knowledgeTree, path);
                     
-                    if (parentNode) {
-                        // 将获取到的知识点添加为该节点的子节点
-                        const knowledgeNodes = data.items.map((item, index) => {
-                            return {
-                                id: `item-${path.join('-')}-${index}`,
-                                key: item.key || item.title || `知识点${index + 1}`,
-                                label: item.title || item.key || `知识点${index + 1}`,
-                                type: 'item',
-                                path: [...path, item.key || item.title],
-                                content: item.content || '',
-                                kgid: item.id || `${path.join('-')}-${index}`,
-                                isLeaf: true
-                            };
-                        });
+        //             if (parentNode) {
+        //                 // 将获取到的知识点添加为该节点的子节点
+        //                 const knowledgeNodes = data.items.map((item, index) => {
+        //                     return {
+        //                         id: `item-${path.join('-')}-${index}`,
+        //                         key: item.key || item.title || `知识点${index + 1}`,
+        //                         label: item.title || item.key || `知识点${index + 1}`,
+        //                         type: 'item',
+        //                         path: [...path, item.key || item.title],
+        //                         content: item.content || '',
+        //                         kgid: item.id || `${path.join('-')}-${index}`,
+        //                         isLeaf: true
+        //                     };
+        //                 });
                         
-                        // 更新节点的子节点
-                        this.$set(parentNode, 'children', knowledgeNodes);
+        //                 // 更新节点的子节点
+        //                 this.$set(parentNode, 'children', knowledgeNodes);
                         
-                        // 确保节点展开
-                        this.$nextTick(() => {
-                            if (this.$refs.knowledgeTree && parentNode.id) {
-                                const storeNode = this.$refs.knowledgeTree.store.nodesMap[parentNode.id];
-                                if (storeNode) {
-                                    storeNode.expanded = true;
-                                }
-                            }
-                        });
-                    } else {
-                        console.warn(`未找到路径 ${path.join('/')} 对应的节点`);
-                    }
-                } else {
-                    console.warn(`路径 ${path.join('/')} 下没有知识点数据`);
-                }
+        //                 // 确保节点展开
+        //                 this.$nextTick(() => {
+        //                     if (this.$refs.knowledgeTree && parentNode.id) {
+        //                         const storeNode = this.$refs.knowledgeTree.store.nodesMap[parentNode.id];
+        //                         if (storeNode) {
+        //                             storeNode.expanded = true;
+        //                         }
+        //                     }
+        //                 });
+        //             } else {
+        //                 console.warn(`未找到路径 ${path.join('/')} 对应的节点`);
+        //             }
+        //         } else {
+        //             console.warn(`路径 ${path.join('/')} 下没有知识点数据`);
+        //         }
                 
-            } catch (error) {
-                console.error('获取知识点失败:', error);
-                this.$message.error('获取知识点失败: ' + error.message);
-            }
-        },
+        //     } catch (error) {
+        //         console.error('获取知识点失败:', error);
+        //         this.$message.error('获取知识点失败: ' + error.message);
+        //     }
+        // },
         
         // 获取知识点详情
-        async fetchKnowledgeDetail(node) {
-            if (!node || !node.path) {
-                console.warn('节点信息不完整:', node);
-                return;
-            }
+        // async fetchKnowledgeDetail(node) {
+        //     if (!node || !node.path) {
+        //         console.warn('节点信息不完整:', node);
+        //         return;
+        //     }
             
-            try {
-                console.log(`获取知识点详情: ${node.label}`);
+        //     try {
+        //         console.log(`获取知识点详情: ${node.label}`);
                 
-                // 构建查询参数
-                const queryParams = new URLSearchParams({
-                    department_name: this.currentDepartmentName,
-                    path: node.path.join('/'),
-                    key: node.key
-                });
+        //         // 构建查询参数
+        //         const queryParams = new URLSearchParams({
+        //             department_name: this.currentDepartmentName,
+        //             path: node.path.join('/'),
+        //             key: node.key
+        //         });
                 
-                const response = await fetch(`${baseUrl}/api/knowledge_detail?${queryParams.toString()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': API_AUTH_TOKEN,
-                        'Content-Type': 'application/json'
-                    }
-                });
+        //         const response = await fetch(`${baseUrl}/api/knowledge_detail?${queryParams.toString()}`, {
+        //             method: 'GET',
+        //             headers: {
+        //                 'Authorization': API_AUTH_TOKEN,
+        //                 'Content-Type': 'application/json'
+        //             }
+        //         });
                 
-                if (!response.ok) {
-                    throw new Error(`获取知识点详情失败: ${response.status} ${response.statusText}`);
-                }
+        //         if (!response.ok) {
+        //             throw new Error(`获取知识点详情失败: ${response.status} ${response.statusText}`);
+        //         }
                 
-                const data = await response.json();
-                console.log(`获取到的知识点详情:`, data);
+        //         const data = await response.json();
+        //         console.log(`获取到的知识点详情:`, data);
                 
-                if (data && data.content) {
-                    // 更新节点的内容
-                    node.content = data.content;
+        //         if (data && data.content) {
+        //             // 更新节点的内容
+        //             node.content = data.content;
                     
-                    // 如果当前预览的是这个节点，更新预览内容
-                    if (this.currentPreviewNode && this.currentPreviewNode.id === node.id) {
-                        this.currentPreviewNode.content = data.content;
-                    }
-                } else {
-                    console.warn(`知识点 ${node.label} 没有内容`);
-                }
+        //             // 如果当前预览的是这个节点，更新预览内容
+        //             if (this.currentPreviewNode && this.currentPreviewNode.id === node.id) {
+        //                 this.currentPreviewNode.content = data.content;
+        //             }
+        //         } else {
+        //             console.warn(`知识点 ${node.label} 没有内容`);
+        //         }
                 
-            } catch (error) {
-                console.error('获取知识点详情失败:', error);
-                this.$message.error('获取知识点详情失败: ' + error.message);
-            }
-        },
+        //     } catch (error) {
+        //         console.error('获取知识点详情失败:', error);
+        //         this.$message.error('获取知识点详情失败: ' + error.message);
+        //     }
+        // },
         
         // 根据路径查找节点
         findNodeByPath(nodes, path) {
@@ -1693,7 +1707,7 @@ module.exports = {
                         ...row,
                         kb_reference: mergedKbReference
                     };
-                } else {
+                } else if (row.department === '市监知识库') {
                     // 龙岗政数局处理逻辑
                     const kbIds = row.kb_reference.map(item => item.kb_id);
                     
@@ -1716,6 +1730,30 @@ module.exports = {
                         ...row,
                         kb_reference: mergedKbReference
                     };
+                } else if (row.department === '政务中心') {
+                    // 政务中心处理逻辑
+                    const kbIds = row.kb_reference.map(item => item.kb_id);
+                    
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
+                    
+                    // 将获取到的内容与原始数据合并
+                    const mergedKbReference = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
+                        return {
+                            kb_id: ref.kb_id, // 保持kb_id字段一致
+                            similarity: ref.similarity,
+                            kb_title: content ? content.title : '',
+                            kb_content: content ? content.content : ''
+                        };
+                    });
+
+                    // 更新当前反馈的知识点引用数据
+                    this.currentFeedback = {
+                        ...row,
+                        kb_reference: mergedKbReference
+                    };
+                    
                 }
             }
             
@@ -2047,7 +2085,7 @@ module.exports = {
                 return [];
             }
         },
-        // 添加获取龙岗知识点内容方法
+        // 添加获取市监局知识点内容方法
         async fetchLonggangKnowledgeContent(kgids) {
             try {
                 const response = await axios.post(`${baseUrl}/api/feedbackLGKnow_Cnt`, { ids:kgids }, {
@@ -2067,30 +2105,378 @@ module.exports = {
                 return [];
             }
         },
+        // 添加获取政务中心业务知识点内容方法
+        async fetchZwzxKnowledgeContent(kgids) {
+            try {
+                const response = await axios.post(`${baseUrl}/api/feedbackZwzxKnow_Cnt`, { ids:kgids }, {
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'  
+                    }
+                });
+                
+                if (response.data && response.data.feedback_list) {
+                    return response.data.feedback_list;
+                } 
+                return [];
+            } catch (error) {
+                console.error('获取知识点内容失败:', error);
+                // this.$message.error('获取知识点内容失败');
+                return [];
+            }
+        },
+        // 生成UUID
         generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
-        }
+        },
+        // 新增市医保中心知识点获取方法
+        async fetchSjjKnowledge(category1) {
+            if (!category1) {
+                console.warn('分类参数无效');
+                return;
+            }
+            
+            try {
+                console.log(`获取市医保中心分类 ${category1} 的知识点`);
+                
+                // 使用路径参数方式传递参数
+                const response = await fetch(`${baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category1)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`市医保中心知识点数据:`, data);
+                
+                if (data && data.feedback_list && Array.isArray(data.feedback_list)) {
+                    // 获取当前点击的节点路径
+                    let nodePath;
+                    if (this.currentPreviewNode && this.currentPreviewNode.path) {
+                        nodePath = this.currentPreviewNode.path;
+                    } else {
+                        // 如果没有路径，使用分类作为路径
+                        nodePath = [category1];
+                    }
+                    
+                    // 将数据转换为知识点节点
+                    const knowledgeNodes = data.feedback_list.map((item, index) => {
+                        return {
+                            id: `item-sjj-${index}-${Date.now()}`,
+                            key: item.title || `知识点${index + 1}`,
+                            label: item.title || `知识点${index + 1}`,
+                            type: 'item',
+                            path: [...nodePath],
+                            content: item.content || '',
+                            kgid: `sjj-${category1}-${index}`,
+                            isLeaf: true
+                        };
+                    });
+                    
+                    // 找到当前预览节点
+                    if (this.currentPreviewNode) {
+                        // 设置子节点
+                        this.$set(this.currentPreviewNode, 'children', knowledgeNodes);
+                        
+                        // 找到对应的树节点并展开
+                        const treeNode = this.findNodeById(this.knowledgeTree, this.currentPreviewNode.id);
+                        if (treeNode) {
+                            this.$set(treeNode, 'children', knowledgeNodes);
+                            
+                            // 确保节点展开
+                            this.$nextTick(() => {
+                                if (this.$refs.knowledgeTree && treeNode.id) {
+                                    const storeNode = this.$refs.knowledgeTree.store.nodesMap[treeNode.id];
+                                    if (storeNode) {
+                                        storeNode.expanded = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    console.warn(`市医保中心分类 ${category1} 下没有知识点数据`);
+                }
+                
+            } catch (error) {
+                // this.$message.error('获取市医保中心知识点失败: ' + error.message);
+            }
+        },
+
+        // 新增政务中心业务知识点获取方法
+        async fetchZwzxKnowledge(category) {
+            if (!category) {
+                console.warn('分类参数无效');
+                return;
+            }
+            
+            try {
+                console.log(`获取政务中心业务分类 ${category} 的知识点`);
+                
+                const queryParams = new URLSearchParams({
+                    category: category
+                });
+                
+                const response = await fetch(`${baseUrl}/api/zwzx_knowledge?${queryParams.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`政务中心业务知识点数据:`, data);
+                
+                if (data && data.knowledge && Array.isArray(data.knowledge)) {
+                    // 获取当前点击的节点路径
+                    let nodePath;
+                    if (this.currentPreviewNode && this.currentPreviewNode.path) {
+                        nodePath = this.currentPreviewNode.path;
+                    } else {
+                        // 如果没有路径，使用分类作为路径
+                        nodePath = [category];
+                    }
+                    
+                    // 将数据转换为知识点节点
+                    const knowledgeNodes = data.knowledge.map((item, index) => {
+                        // 分割 item，因为格式可能是 "标题,内容"
+                        const parts = typeof item === 'string' ? item.split(',') : ['未知标题', '未知内容'];
+                        const title = parts[0] || '未知标题';
+                        const content = parts.length > 1 ? parts.slice(1).join(',') : '';
+                        
+                        return {
+                            id: `item-zwzx-${index}-${Date.now()}`,
+                            key: title,
+                            label: title,
+                            type: 'item',
+                            path: [...nodePath],
+                            content: content,
+                            kgid: `zwzx-${category}-${index}`,
+                            isLeaf: true
+                        };
+                    });
+                    
+                    // 找到当前预览节点
+                    if (this.currentPreviewNode) {
+                        // 设置子节点
+                        this.$set(this.currentPreviewNode, 'children', knowledgeNodes);
+                        
+                        // 找到对应的树节点并展开
+                        const treeNode = this.findNodeById(this.knowledgeTree, this.currentPreviewNode.id);
+                        if (treeNode) {
+                            this.$set(treeNode, 'children', knowledgeNodes);
+                            
+                            // 确保节点展开
+                            this.$nextTick(() => {
+                                if (this.$refs.knowledgeTree && treeNode.id) {
+                                    const storeNode = this.$refs.knowledgeTree.store.nodesMap[treeNode.id];
+                                    if (storeNode) {
+                                        storeNode.expanded = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    console.warn(`政务中心业务分类 ${category} 下没有知识点数据`);
+                }
+                
+            } catch (error) {
+                // this.$message.error('获取政务中心业务知识点失败: ' + error.message);
+            }
+        },
+
+        // 新增市监知识库知识点获取方法
+        async fetchLGKnowledge(category1) {
+            if (!category1) {
+                console.warn('分类参数无效');
+                return;
+            }
+            
+            try {
+                console.log(`获取市监知识库分类 ${category1} 的知识点`);
+                
+                // 确保我们使用正确的接口
+                const response = await fetch(`${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category1)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': API_AUTH_TOKEN,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`市监知识库知识点数据:`, data);
+                
+                if (data && data.feedback_list && Array.isArray(data.feedback_list)) {
+                    // 获取当前点击的节点路径
+                    let nodePath;
+                    if (this.currentPreviewNode && this.currentPreviewNode.path) {
+                        nodePath = this.currentPreviewNode.path;
+                    } else {
+                        // 如果没有路径，使用分类作为路径
+                        nodePath = [category1];
+                    }
+                    
+                    // 将数据转换为知识点节点
+                    const knowledgeNodes = data.feedback_list.map((item, index) => {
+                        return {
+                            id: `item-lg-${index}-${Date.now()}`,
+                            key: item.title || `知识点${index + 1}`,
+                            label: item.title || `知识点${index + 1}`,
+                            type: 'item',
+                            path: [...nodePath],
+                            content: item.content || '',
+                            kgid: `lg-${category1}-${index}`,
+                            isLeaf: true
+                        };
+                    });
+                    
+                    // 找到当前预览节点
+                    if (this.currentPreviewNode) {
+                        // 设置子节点
+                        this.$set(this.currentPreviewNode, 'children', knowledgeNodes);
+                        
+                        // 找到对应的树节点并展开
+                        const treeNode = this.findNodeById(this.knowledgeTree, this.currentPreviewNode.id);
+                        if (treeNode) {
+                            this.$set(treeNode, 'children', knowledgeNodes);
+                            
+                            // 确保节点展开
+                            this.$nextTick(() => {
+                                if (this.$refs.knowledgeTree && treeNode.id) {
+                                    const storeNode = this.$refs.knowledgeTree.store.nodesMap[treeNode.id];
+                                    if (storeNode) {
+                                        storeNode.expanded = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    console.warn(`市监知识库分类 ${category1} 下没有知识点数据`);
+                    
+                    // 尝试另一种可能的数据格式
+                    if (data && Array.isArray(data)) {
+                        // 获取当前点击的节点路径
+                        let nodePath;
+                        if (this.currentPreviewNode && this.currentPreviewNode.path) {
+                            nodePath = this.currentPreviewNode.path;
+                        } else {
+                            nodePath = [category1];
+                        }
+                        
+                        // 将数据转换为知识点节点
+                        const knowledgeNodes = data.map((item, index) => {
+                            return {
+                                id: `item-lg-${index}-${Date.now()}`,
+                                key: item.title || `知识点${index + 1}`,
+                                label: item.title || `知识点${index + 1}`,
+                                type: 'item',
+                                path: [...nodePath],
+                                content: item.content || '',
+                                kgid: `lg-${category1}-${index}`,
+                                isLeaf: true
+                            };
+                        });
+                        
+                        // 找到当前预览节点
+                        if (this.currentPreviewNode) {
+                            // 设置子节点
+                            this.$set(this.currentPreviewNode, 'children', knowledgeNodes);
+                            
+                            // 找到对应的树节点并展开
+                            const treeNode = this.findNodeById(this.knowledgeTree, this.currentPreviewNode.id);
+                            if (treeNode) {
+                                this.$set(treeNode, 'children', knowledgeNodes);
+                                
+                                // 确保节点展开
+                                this.$nextTick(() => {
+                                    if (this.$refs.knowledgeTree && treeNode.id) {
+                                        const storeNode = this.$refs.knowledgeTree.store.nodesMap[treeNode.id];
+                                        if (storeNode) {
+                                            storeNode.expanded = true;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                // this.$message.error('获取市监知识库知识点失败: ' + error.message);
+            }
+        },
+
+        // 根据ID查找节点
+        findNodeById(nodes, id) {
+            if (!nodes || !Array.isArray(nodes) || nodes.length === 0 || !id) {
+                return null;
+            }
+            
+            // 递归查找节点
+            const findNode = (currentNodes) => {
+                if (!currentNodes || currentNodes.length === 0) {
+                    return null;
+                }
+                
+                for (const node of currentNodes) {
+                    if (node.id === id) {
+                        return node;
+                    }
+                    
+                    if (node.children && node.children.length > 0) {
+                        const foundNode = findNode(node.children);
+                        if (foundNode) {
+                            return foundNode;
+                        }
+                    }
+                }
+                
+                return null;
+            };
+            
+            return findNode(nodes);
+        },
     },
     mounted() {
         this.getFeedbackTableData();
         this.getFeedbackTypes(); // 获取反馈类型列表
-        this.fetchDepartments();
+        // 移除这里的fetchDepartments调用，只在需要时（打开知识库弹窗时）才调用
+        // this.fetchDepartments();
         
         // 使用CDN加载markdown-it
-        if (window.markdownit) {
-            this.md = window.markdownit({
-                html: true,
-                linkify: true,
-                typographer: true,
-                breaks: true
-            });
-        } else {
+        // if (window.markdownit) {
+        //     this.md = window.markdownit({
+        //         html: true,
+        //         linkify: true,
+        //         typographer: true,
+        //         breaks: true
+        //     });
+        // } 
+        // else {
             // 如果markdownit不存在，动态加载脚本
             const script = document.createElement('script');
-            script.src = '../external_js/markdown-it.js';
+            // script.src = './external_js/markdown-it.js';
             script.onload = () => {
                 this.md = window.markdownit({
                     html: true,
@@ -2105,7 +2491,7 @@ module.exports = {
                 }
             };
             document.head.appendChild(script);
-        }
+        // }
     }
 }
 </script>

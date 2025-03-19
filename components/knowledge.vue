@@ -174,6 +174,7 @@
             title="知识图谱"
             :visible="graphDialogVisible"
             width="70%"
+        :fullscreen="true"
             custom-class="knowledge-graph-dialog"
             @close="closeGraphDialog">
             <div v-if="isGraphLoading" class="loading-container">
@@ -206,12 +207,9 @@ module.exports =  {
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
             // 新增的部门选项
-            departmentOptions: [
-                { value: '市监知识库', label: '市监局知识库' },
-                { value: '市医保中心', label: '医保知识库' },
-            ],
+            departmentOptions: [],
             // 当前选中的部门
-            selectedDepartment: '市监知识库',
+            selectedDepartment: '',
             // 搜索过滤文本
             filterText: '',
             // 知识库树形数据
@@ -251,8 +249,8 @@ module.exports =  {
         }
     },
     created() {
-        // 组件创建时获取知识点分类
-        this.fetchKnowledgeCategories();
+        // 组件创建时获取部门列表
+        this.fetchDepartments();
     },
     mounted() {
         this.decompositionDialogVisible = false;
@@ -406,43 +404,43 @@ module.exports =  {
             } else {
                 // 如果没有分解数据，创建一个多层级示例数据进行演示
                 const demoData = {
-                    "key": "root",
+                    "session": "root",
                     "title": "基本医疗保险一档参保人门诊医保待遇",
                     "items": [
                         {
-                            "key": "section1",
+                            "session": "section1",
                             "title": "一、普通门诊统筹待遇",
                             "items": [
                                 {
-                                    "key": "section1_1",
+                                    "session": "section1_1",
                                     "title": "基本报销比例",
                                     "details": "按照医疗机构级别不同比例支付",
                                     "items": [
                                         {
-                                            "key": "s1_1_1",
+                                            "session": "s1_1_1",
                                             "title": "一级以下医疗机构",
                                             "value": "75%"
                                         },
                                         {
-                                            "key": "s1_1_2",
+                                            "session": "s1_1_2",
                                             "title": "二级医院",
                                             "value": "65%"
                                         },
                                         {
-                                            "key": "s1_1_3",
+                                            "session": "s1_1_3",
                                             "title": "三级医院",
                                             "value": "55%"
                                         }
                                     ]
                                 },
                                 {
-                                    "key": "section1_2",
+                                    "session": "section1_2",
                                     "title": "特殊人群额外补贴",
                                     "details": "退休人员及60岁以上居民参保人",
                                     "value": "支付比例提高5个百分点"
                                 },
                                 {
-                                    "key": "section1_3",
+                                    "session": "section1_3",
                                     "title": "非选定医疗机构就诊",
                                     "details": "未经转诊到非选定医疗机构",
                                     "value": "统筹基金不予支付，可由个人账户支付"
@@ -450,150 +448,150 @@ module.exports =  {
                             ]
                         },
                         {
-                            "key": "section2",
+                            "session": "section2",
                             "title": "二、普通门诊统筹支付限额",
                             "items": [
                                 {
-                                    "key": "section2_1",
+                                    "session": "section2_1",
                                     "title": "职工基本医疗保险一档参保人",
                                     "items": [
                                         {
-                                            "key": "s2_1_1",
+                                            "session": "s2_1_1",
                                             "title": "总体支付限额",
                                             "value": "不超过上上年度在岗职工年平均工资的6%（退休人员为7%）"
                                         },
                                         {
-                                            "key": "s2_1_2",
+                                            "session": "s2_1_2",
                                             "title": "二级以上医院限额",
                                             "value": "不超过上上年度在岗职工年平均工资的3%（退休人员为3.5%）"
                                         }
                                     ]
                                 },
                                 {
-                                    "key": "section2_2",
+                                    "session": "section2_2",
                                     "title": "职工基本医疗保险二档参保人、居民基本医疗保险参保人",
                                     "value": "支付限额最高不超过上上年度在岗职工年平均工资的1.5%"
                                 }
                             ]
                         },
                         {
-                            "key": "section3",
+                            "session": "section3",
                             "title": "三、门诊诊查费",
                             "items": [
                                 {
-                                    "key": "section3_1",
+                                    "session": "section3_1",
                                     "title": "基本报销比例",
                                     "items": [
                                         {
-                                            "key": "s3_1_1",
+                                            "session": "s3_1_1",
                                             "title": "一级以下医疗机构",
                                             "value": "80%"
                                         },
                                         {
-                                            "key": "s3_1_2",
+                                            "session": "s3_1_2",
                                             "title": "二级医院",
                                             "value": "70%"
                                         },
                                         {
-                                            "key": "s3_1_3",
+                                            "session": "s3_1_3",
                                             "title": "三级医院",
                                             "value": "60%"
                                         }
                                     ]
                                 },
                                 {
-                                    "key": "section3_2",
+                                    "session": "section3_2",
                                     "title": "待遇限制",
                                     "value": "门诊诊查费待遇与其他由基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
                                 }
                             ]
                         },
                         {
-                            "key": "section4",
+                            "session": "section4",
                             "title": "四、门诊大型设备",
                             "items": [
                                 {
-                                    "key": "section4_1",
+                                    "session": "section4_1",
                                     "title": "职工基本医疗保险一档参保人",
                                     "details": "在市内定点医疗机构门诊发生的大型医疗设备检查费用和治疗所发生的基本医疗费用",
                                     "value": "由职工基本医疗保险统筹基金按照80%的比例支付"
                                 },
                                 {
-                                    "key": "section4_2",
+                                    "session": "section4_2",
                                     "title": "待遇限制",
                                     "value": "与其他由职工基本医疗保险统筹基金支付的门诊基本医疗费用待遇不重复享受"
                                 },
                                 {
-                                    "key": "section4_3",
+                                    "session": "section4_3",
                                     "title": "适用范围",
                                     "value": "门诊大型医疗设备检查和治疗项目范围由市医疗保障行政部门另行制定"
                                 }
                             ]
                         },
                         {
-                            "key": "section5",
+                            "session": "section5",
                             "title": "五、门诊特定病种待遇",
                             "items": [
                                 {
-                                    "key": "section5_1",
+                                    "session": "section5_1",
                                     "title": "门特病种分类",
                                     "items": [
                                         {
-                                            "key": "s5_1_1",
+                                            "session": "s5_1_1",
                                             "title": "一类门特病种"
                                         },
                                         {
-                                            "key": "s5_1_2",
+                                            "session": "s5_1_2",
                                             "title": "二类门特病种"
                                         }
                                     ]
                                 },
                                 {
-                                    "key": "section5_2",
+                                    "session": "section5_2",
                                     "title": "一类门特病种支付比例",
                                     "items": [
                                         {
-                                            "key": "s5_2_1",
+                                            "session": "s5_2_1",
                                             "title": "连续参保时间未满12个月",
                                             "value": "60%"
                                         },
                                         {
-                                            "key": "s5_2_2",
+                                            "session": "s5_2_2",
                                             "title": "连续参保时间满12个月未满36个月",
                                             "value": "75%"
                                         },
                                         {
-                                            "key": "s5_2_3",
+                                            "session": "s5_2_3",
                                             "title": "连续参保时间满36个月",
                                             "value": "90%"
                                         }
                                     ]
                                 },
                                 {
-                                    "key": "section5_3",
+                                    "session": "section5_3",
                                     "title": "二类门特病种支付比例",
                                     "items": [
                                         {
-                                            "key": "s5_3_1",
+                                            "session": "s5_3_1",
                                             "title": "高血压、糖尿病药品门诊费用",
                                             "details": "支付比例按第三十条规定执行"
                                         },
                                         {
-                                            "key": "s5_3_2",
+                                            "session": "s5_3_2",
                                             "title": "签约家庭医生开具处方的高血压、糖尿病药品费用",
                                             "value": "90%"
                                         },
                                         {
-                                            "key": "s5_3_3",
+                                            "session": "s5_3_3",
                                             "title": "其他二类门特病种",
                                             "items": [
                                                 {
-                                                    "key": "s5_3_3_1",
+                                                    "session": "s5_3_3_1",
                                                     "title": "职工基本医疗保险一档参保人",
                                                     "value": "80%"
                                                 },
                                                 {
-                                                    "key": "s5_3_3_2",
+                                                    "session": "s5_3_3_2",
                                                     "title": "职工二档、居民参保人",
                                                     "value": "不低于60%"
                                                 }
@@ -858,6 +856,46 @@ module.exports =  {
             });
         },
         
+        // 获取部门列表
+        async fetchDepartments() {
+            try {
+                const apiUrl = `${this.apiConfig.baseUrl}/api/departments`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': this.apiConfig.token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取部门列表失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data && data.departments) {
+                    // 转换部门数据为选项格式
+                    this.departmentOptions = data.departments.map(dept => ({
+                        value: dept.department_name,
+                        label: dept.department_name
+                    }));
+                    
+                    // 如果有部门数据，默认选择第一个
+                    if (this.departmentOptions.length > 0) {
+                        this.selectedDepartment = this.departmentOptions[0].value;
+                        // 获取该部门的知识分类
+                        this.fetchKnowledgeCategories();
+                    }
+                } else {
+                    console.warn('部门数据格式不正确');
+                    this.$message.warning('获取部门列表数据格式不正确');
+                }
+            } catch (error) {
+                console.error('获取部门列表失败:', error);
+                this.$message.error('获取部门列表失败: ' + error.message);
+            }
+        },
+        
         // 获取知识点分类
         async fetchKnowledgeCategories() {
             this.loading = true;
@@ -866,11 +904,7 @@ module.exports =  {
             try {
                 console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
                 
-                const params = new URLSearchParams({
-                    department: this.selectedDepartment
-                });
-                
-                const apiUrl = `${this.apiConfig.baseUrl}/api/query_kb_category?${params.toString()}`;
+                const apiUrl = `${this.apiConfig.baseUrl}/api/department_taxonomy?department_name=${encodeURIComponent(this.selectedDepartment)}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -886,9 +920,8 @@ module.exports =  {
                 }
                 
                 const data = await response.json();
-                // 根据实际返回的数据格式处理
                 if (data) {
-                    // 直接使用返回的数组数据
+                    // 转换分类数据为树形结构
                     this.knowledgeTree = this.transformCategoryTree(data);
                     console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
                     
@@ -900,10 +933,9 @@ module.exports =  {
                     // 如果树不为空，可以默认展开第一级
                     if (this.knowledgeTree.length > 0) {
                         this.$nextTick(() => {
-                            if (this.$refs.tree) {
-                                // 展开第一个分类
-                                this.$refs.tree.store.nodesMap[this.knowledgeTree[0].id].expanded = true;
-                            }
+                            let maxDepth = this.getMaxDepth(this.knowledgeTree);
+                            let expandLevel = maxDepth > 1 ? maxDepth - 1 : maxDepth;
+                            this.expandNodesRecursively(this.knowledgeTree, expandLevel);
                         });
                     } else {
                         console.warn(`${this.selectedDepartment} 转换后的知识树为空`);
@@ -922,115 +954,51 @@ module.exports =  {
         },
         
         // 转换分类树结构
-        transformCategoryTree(categoryList) {
-            // 数据有效性检查
-            if (!categoryList || !Array.isArray(categoryList) || categoryList.length === 0) {
+        transformCategoryTree(data) {
+            if (!data || !data.items) {
                 console.log('分类数据无效或为空');
                 return [];
             }
             
-            console.log('开始转换知识树数据:', categoryList);
+            console.log('开始转换知识树数据:', data);
             
             try {
-                // 获取数据中的第一个对象（包含部门信息）
-                const departmentData = categoryList[0];
-                
-                // 检查部门数据是否有效
-                if (!departmentData || typeof departmentData !== 'object') {
-                    console.error('部门数据格式不正确:', departmentData);
-                    return [];
-                }
-                
-                // 获取部门名称（对象的键）
-                const departmentKeys = Object.keys(departmentData);
-                if (departmentKeys.length === 0) {
-                    console.error('部门对象没有键');
-                    return [];
-                }
-                
-                const departmentName = departmentKeys[0];
-                console.log('部门名称:', departmentName);
-                
-                // 获取该部门的分类列表
-                const categories = departmentData[departmentName];
-                
-                if (!categories || !Array.isArray(categories) || categories.length === 0) {
-                    console.log('该部门下没有分类数据');
-                    return [];
-                }
-                
-                console.log(`找到${categories.length}个分类`);
-                
-                // 自定义排序函数（适用于市监局知识库）
-                const sortCategories = (categories) => {
-                    if (this.selectedDepartment === '市监知识库') {
-                        // 为市监局知识库分类添加权重
-                        const categoryWeightMap = {};
-                        const chineseNums = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', 
-                            '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十'];
-                        
-                        // 创建中文数字到权重的映射
-                        chineseNums.forEach((num, index) => {
-                            categoryWeightMap[num] = index;
-                        });
-                        
-                        // 对分类进行排序
-                        return [...categories].sort((a, b) => {
-                            // 从分类名中提取中文数字
-                            const getChineseNum = (str) => {
-                                if (!str) return null;
-                                const match = str.match(/^([\u4e00-\u9fa5]+)[、]/);
-                                return match ? match[1] : null;
-                            };
-                            
-                            const numA = getChineseNum(a.category2);
-                            const numB = getChineseNum(b.category2);
-                            
-                            // 根据中文数字权重排序
-                            if (numA && numB) {
-                                return categoryWeightMap[numA] - categoryWeightMap[numB];
-                            } else if (numA) {
-                                return -1; // 有数字的排前面
-                            } else if (numB) {
-                                return 1;
-                            }
-                            
-                            // 如果没有提取到中文数字，按原始字符串排序
-                            return a.category2.localeCompare(b.category2, 'zh-CN');
-                        });
+                // 递归处理节点
+                const processNode = (node, parentId = null, level = 0) => {
+                    if (!node || !node.key) return null;
+                    
+                    const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+                    const nodeData = {
+                        id: nodeId,
+                        label: node.key,
+                        name: node.key,
+                        type: 'category', // 默认为category类型
+                        level: level
+                    };
+                    
+                    // 如果有父节点，添加父节点ID
+                    if (parentId) {
+                        nodeData.parentId = parentId;
                     }
                     
-                    // 其他知识库保持原排序
-                    return categories;
+                    // 处理子节点
+                    if (node.items && node.items.length > 0) {
+                        nodeData.children = node.items
+                            .map(child => processNode(child, nodeId, level + 1))
+                            .filter(child => child !== null);
+                    } else {
+                        // 如果没有子节点，则标记为subcategory（最后一级分类）
+                        nodeData.type = 'subcategory';
+                    }
+                    
+                    return nodeData;
                 };
                 
-                // 排序分类
-                const sortedCategories = sortCategories(categories);
-                
-                // 转换为树形结构
-                return sortedCategories.map((category, index) => {
-                    // 检查分类对象结构
-                    if (!category || !category.category2) {
-                        console.warn('无效的分类项:', category);
-                        return null;
-                    }
+                // 处理根节点的子节点
+                return data.items
+                    .map(item => processNode(item))
+                    .filter(item => item !== null);
                     
-                    return {
-                        id: `category-${index}`,
-                        label: this.stripHtmlTags(category.category2),
-                        name: category.category2,
-                        type: 'category',
-                        children: Array.isArray(category.category3) ? category.category3
-                            .filter(subCategory => subCategory) // 过滤掉空字符串
-                            .map((subCategory, subIndex) => ({
-                                id: `subcategory-${index}-${subIndex}`,
-                                label: this.stripHtmlTags(subCategory),
-                                name: subCategory,
-                                type: 'subcategory',
-                                parentCategory: category.category2
-                            })) : []
-                    };
-                }).filter(item => item !== null); // 过滤掉无效的项
             } catch (error) {
                 console.error('转换知识树数据时出错:', error);
                 return [];
@@ -1046,23 +1014,28 @@ module.exports =  {
                 console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点`);
                 
                 const params = {
-                    // department: this.selectedDepartment,
                     category: category
                 };
                 
-                const queryString = new URLSearchParams(params).toString();
-                
                 // 根据不同部门选择不同的API接口
                 let apiUrl;
+                
                 if (this.selectedDepartment === '市医保中心') {
-                    // 医保知识库使用 getKnowle 接口
-                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getKnowle/${category}`;
+                    // 市医保中心知识库使用 sjj_knowledge 接口
+                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category)}`;
+                } else if (this.selectedDepartment === '政务中心业务') {
+                    // 政务中心业务使用 zwzx_knowledge 接口，使用参数形式
+                    apiUrl = `${this.apiConfig.baseUrl}/api/zwzx_knowledge?category=${encodeURIComponent(category)}`;
                 } else if (this.selectedDepartment === '市监知识库') {
-                    // 市监局知识库使用 getLGKnowle 接口
-                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getLGKnowle/${category}?`;
+                    // 市监知识库使用 getLGKnowle 接口
+                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
                 }
                 
                 console.log('知识点请求URL:', apiUrl);
+                
+                if (!apiUrl) {
+                    throw new Error(`未找到 ${this.selectedDepartment} 的对应接口`);
+                }
                 
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -1079,14 +1052,32 @@ module.exports =  {
                 const data = await response.json();
                 console.log(`${category} 知识点数据:`, data);
                 
-                if (data && data.feedback_list) {
+                // 根据不同接口处理返回的数据格式
+                if (this.selectedDepartment === '政务中心业务' && data && data.knowledge) {
+                    // 政务中心业务返回格式处理
+                    this.knowledgeItems = data.knowledge.map(item => {
+                        // 解析知识项，格式为"标题,内容"
+                        const parts = item.split(',');
+                        let title = parts[0] || '';
+                        // 去掉内容中的引号
+                        let content = parts.length > 1 ? parts[1].replace(/^"|"$/g, '') : '';
+                        
+                        return {
+                            title: title,
+                            content: content,
+                            kgid: Math.random().toString(36).substr(2, 9)  // 生成临时ID
+                        };
+                    });
+                } else if (data && data.feedback_list) {
+                    // 市医保中心和市监知识库使用相同的返回格式
                     this.knowledgeItems = data.feedback_list;
-                    console.log(`获取到 ${this.knowledgeItems.length} 条知识点`);
                 } else {
                     console.warn(`${category} 知识点数据格式不符合预期:`, data);
                     this.$message.warning('获取知识点数据格式不正确');
                     this.knowledgeItems = [];
                 }
+                
+                console.log(`获取到 ${this.knowledgeItems.length} 条知识点`);
                 
             } catch (error) {
                 console.error(`获取 ${category} 知识点失败:`, error);
@@ -1108,11 +1099,14 @@ module.exports =  {
             this.currentNode = JSON.parse(JSON.stringify(data));
             this.currentNodeId = data.id;
             
-            // 如果点击的是二级分类节点，获取该分类下的知识点
-            if (data.type === 'subcategory') {
+            console.log('点击节点:', data);
+            
+            // 检查是否是最后一级分类（没有子节点或type为subcategory）
+            if (data.type === 'subcategory' || ((!data.children || data.children.length === 0) && data.type === 'category')) {
+                // 调用接口获取该分类下的知识项
                 this.fetchKnowledgeByCategory(data.name);
-            } else if (data.type === 'category') {
-                // 如果点击的是一级分类，清空知识点列表
+            } else {
+                // 如果点击的是中间级别的分类，清空知识点列表
                 this.knowledgeItems = [];
             }
         },
@@ -1269,6 +1263,34 @@ module.exports =  {
                 this.$message.error('导出SVG失败: ' + error.message);
             }
         },
+
+        getMaxDepth(nodes) {
+            let max = 0;
+            function traverse(arr) {
+                arr.forEach(node => {
+                    if (node.level > max) max = node.level;
+                    if (node.children && node.children.length > 0) {
+                        traverse(node.children);
+                    }
+                });
+            }
+            traverse(nodes);
+            return max;
+        },
+
+        expandNodesRecursively(nodes, expandLevel) {
+            nodes.forEach(node => {
+                if (node.level < expandLevel) {
+                    let treeNode = this.$refs.tree.store.nodesMap[node.id];
+                    if (treeNode) {
+                        treeNode.expanded = true;
+                    }
+                    if (node.children && node.children.length > 0) {
+                        this.expandNodesRecursively(node.children, expandLevel);
+                    }
+                }
+            });
+        }
     }
 }
 </script>
@@ -1547,17 +1569,4 @@ module.exports =  {
 :deep(.knowledge-graph-dialog .el-dialog__footer) {
     padding: 10px 20px;
 }
-
-/* 添加全屏对话框样式 */
-/* :deep(.fullscreen-dialog) {
-    display: flex;
-    flex-direction: column;
-    margin: 0 !important;
-}
-
-:deep(.fullscreen-dialog .el-dialog__body) {
-    flex: 1;
-    overflow: auto;
-    padding: 10px;
-} */
 </style> 

@@ -220,8 +220,8 @@ module.exports = {
   data() {
     return {
         apiConfig: {
-                // baseUrl: 'https://lgdev.baicc.cc/',
-                baseUrl: 'http://172.16.99.32:1034',
+                baseUrl: 'https://lgdev.baicc.cc/',
+                // baseUrl: 'http://172.16.99.32:1034',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
       // 筛选表单

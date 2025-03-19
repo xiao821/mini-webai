@@ -466,8 +466,8 @@
 <script type="module">
 // const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
 // const baseUrl = 'http://172.16.99.32:1034';
-// const baseUrl = 'https://lgdev.baicc.cc/';
-const baseUrl = 'http://172.16.99.32:1034';
+const baseUrl = 'https://lgdev.baicc.cc/';
+// const baseUrl = 'http://172.16.99.32:1034';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
 module.exports = {

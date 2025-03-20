@@ -193,7 +193,7 @@ export async function switchConversation(id) {
 
         if (messagesHistory.length === 0) {
             // 没有历史消息，发送欢迎信息
-            console.log('No history messages, sending welcome message');
+            // console.log('No history messages, sending welcome message');
             // 获取欢迎消息 currentMode未定义
             const currentMode = getCurrentMode();
             const selectedMode = modeConfig[currentMode] || modeConfig['default'];
@@ -201,7 +201,7 @@ export async function switchConversation(id) {
             
             // 显示欢迎消息
             appendMessage('assistant', welcomeMessage, 'first-message');
-            console.log('Welcome message appended:', welcomeMessage);
+            // console.log('Welcome message appended:', welcomeMessage);
             
             // 添加欢迎消息到当前会话的消息数组
             currentConversation.messages.push({
@@ -347,7 +347,7 @@ export async function deleteConversation(id) {
             width: 300,
             padding: 10
         });
-        console.log('Conversation deleted successfully');
+        // console.log('Conversation deleted successfully');
     } catch (error) {
         console.error('删除会话失败:', error);
         alert('删除会话失败: ' + (error.message || '未知错误'));
@@ -421,7 +421,7 @@ export async function startNewConversation(currentMode) {
 
     // 显示欢迎消息
     appendMessage('assistant', welcomeMessage, welcomeMessageId);
-    console.log('Welcome message appended:', welcomeMessage);
+    // console.log('Welcome message appended:', welcomeMessage);
 
     // 重置 newmessages 数组
     newmessages = [];

@@ -32,7 +32,7 @@ export async function initKnowledgeCategory() {
         
         // 获取知识分类数据，传入当前模式
         const data = await fetchLgzsjKnowledgeList(currentMode);
-        console.log(`${department}知识库列表`, data);
+        // console.log(`${department}知识库列表`, data);
         
         if (data && data.items) {
             // 直接渲染数据
@@ -341,7 +341,7 @@ function updateKbCategory(categoryName) {
     // 更新kb_category
     if (modeConfig[currentMode]) {
         modeConfig[currentMode].kb_category = categoryName;
-        console.log(`已更新知识分类: ${categoryName}`);
+        // console.log(`已更新知识分类: ${categoryName}`);
     }
 }
 

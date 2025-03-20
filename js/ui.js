@@ -38,7 +38,7 @@ export function adjustTextareaHeight() {
 export function setWelcomeMessage(mode) {
     const { currentModeTitle, welcomeMessageContainer } = elements;
     const selectedMode = modeConfig[mode] || modeConfig['default'];
-    console.log(selectedMode);
+    console.log('当前选择模式',selectedMode);
     currentModeTitle.textContent = selectedMode.title;
     welcomeMessageContainer.innerHTML = `
         <div class="flex items-start">

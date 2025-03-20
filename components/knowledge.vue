@@ -331,7 +331,6 @@ module.exports =  {
             
             this.isLoading = true; // 显示加载状态
             this.loadingMessage = '正在生成知识分解...';
-            console.log('生成知识分解:', item);
             try { 
                 // 构建请求数据
                 const requestData = {
@@ -379,8 +378,6 @@ module.exports =  {
                             if (this.currentKnowledgeItem) {
                                 this.currentKnowledgeItem.decompositionJson = knolDataObj;
                             }
-
-                            console.log('知识图谱分解结果:', result.knol_data);
                             
                             // 知识分解成功后提示用户可以查看知识图谱
                             this.$message.success('知识分解成功，现在您可以查看知识图谱');
@@ -430,8 +427,6 @@ module.exports =  {
             if (event) {
                 event.stopPropagation();
             }
-            
-            console.log('显示知识图谱:', item);
             
             // 保存当前选中的知识项
             this.currentKnowledgeItem = item;
@@ -608,8 +603,6 @@ module.exports =  {
                     return;
                 }
                 
-                console.log('渲染节点数据:', nodeDataArray);
-                
                 // 设置模型数据
                 this.myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
                 
@@ -718,9 +711,6 @@ module.exports =  {
             // 开始处理根节点
             processNode(data, null, 0);
             
-            console.log('转换后的节点数组:', nodeDataArray);
-            console.log('转换后的链接数组:', linkDataArray);
-            
             return { nodeDataArray, linkDataArray };
         },
         // 单位变化处理
@@ -790,7 +780,7 @@ module.exports =  {
             this.knowledgeTree = []; // 清空现有树数据
             
             try {
-                console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
+                // console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
                 
                 const apiUrl = `${this.apiConfig.baseUrl}/api/department_taxonomy?department_name=${encodeURIComponent(this.selectedDepartment)}`;
                 const response = await fetch(apiUrl, {
@@ -811,7 +801,7 @@ module.exports =  {
                 if (data) {
                     // 转换分类数据为树形结构
                     this.knowledgeTree = this.transformCategoryTree(data);
-                    console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
+                    // console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
                     
                     // 清空当前选中的节点
                     this.currentNode = null;
@@ -847,8 +837,6 @@ module.exports =  {
                 console.log('分类数据无效或为空');
                 return [];
             }
-            
-            console.log('开始转换知识树数据:', data);
             
             try {
                 // 递归处理节点
@@ -899,7 +887,7 @@ module.exports =  {
             this.loading = true;
             
             try {
-                console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点`);
+                // console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点`);
                 
                 const params = {
                     category: category
@@ -919,8 +907,6 @@ module.exports =  {
                     apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
                 }
                 
-                console.log('知识点请求URL:', apiUrl);
-                
                 if (!apiUrl) {
                     throw new Error(`未找到 ${this.selectedDepartment} 的对应接口`);
                 }
@@ -938,7 +924,7 @@ module.exports =  {
                 }
                 
                 const data = await response.json();
-                console.log(`${category} 知识点数据:`, data);
+                // console.log(`${category} 知识点数据:`, data);
                 
                 // 根据不同接口处理返回的数据格式
                 if (this.selectedDepartment === '政务中心业务' && data && data.knowledge) {
@@ -965,8 +951,6 @@ module.exports =  {
                     this.knowledgeItems = [];
                 }
                 
-                console.log(`获取到 ${this.knowledgeItems.length} 条知识点`);
-                
             } catch (error) {
                 console.error(`获取 ${category} 知识点失败:`, error);
                 this.$message.error('获取知识点失败: ' + error.message);
@@ -986,8 +970,6 @@ module.exports =  {
         handleNodeClick(data) {
             this.currentNode = JSON.parse(JSON.stringify(data));
             this.currentNodeId = data.id;
-            
-            console.log('点击节点:', data);
             
             // 检查是否是最后一级分类（没有子节点或type为subcategory）
             if (data.type === 'subcategory' || ((!data.children || data.children.length === 0) && data.type === 'category')) {

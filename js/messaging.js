@@ -239,7 +239,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
                         // 处理knowledge事件数据
                         if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
-                            console.log("收到 knowledge 数据块:", jsonStr);
+                            // console.log("收到 knowledge 数据块:", jsonStr);
                             try {
                                 // 尝试解析JSON字符串
                                 const knowledgeItem = JSON.parse(jsonStr);
@@ -363,14 +363,14 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                 // 直接将数组赋值，不进行JSON.stringify
                 newMessage.knowledge_data = knowledgeData;
                 // 使用JSON.stringify仅用于日志输出
-                console.log('获取knowledge_data: ', JSON.stringify(knowledgeData, null, 2), newMessage);
+                // console.log('获取knowledge_data: ', JSON.stringify(knowledgeData, null, 2), newMessage);
             }
 
             currentConversation.messages.push(newMessage);
 
             // 更新会话
             updateConversation(currentConversation);
-            console.log('currentConversation', currentConversation);
+            // console.log('currentConversation', currentConversation);
 
             // 在消息完成后，自动折叠所有思考过程
             if (messageElement) {

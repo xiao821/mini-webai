@@ -164,7 +164,7 @@ export async function sendChatCompletion(currentConversationId, messages, curren
 
 // 语言识别输入
 export function record_voice(audioBlob) {
-    console.log("开始识别", audioBlob);
+    // console.log("开始识别", audioBlob);
 
     // 创建 FormData 对象
     const formData = new FormData();
@@ -178,7 +178,7 @@ export function record_voice(audioBlob) {
             "Authorization": API_AUTH_TOKEN
         },
     }).then(response => {
-        console.log("识别结果:", response.data);
+        // console.log("识别结果:", response.data);
         const messageInput = document.getElementById('message-input');
         messageInput.value = response.data.text; // 使用 value 属性
 

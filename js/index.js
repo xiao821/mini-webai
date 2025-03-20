@@ -114,7 +114,7 @@ async function initializeApp() {
 
 // 设置事件监听器
 function setupEventListeners() {
-    console.log('设置事件监听器');
+    // console.log('设置事件监听器');
 
     // 当按下回车键且没有按shift时，发送消息
     elements.messageInput.addEventListener('keydown', function (e) {

@@ -622,7 +622,6 @@ module.exports = {
         },
         // 获取表格数据
         async getFeedbackTableData() {
-            console.log('this.currentPage',this.currentPage,this.pageSize)
             this.loading = true;
             try {
                 // 构建查询参数，只在有值时才添加参数
@@ -757,7 +756,6 @@ module.exports = {
         viewDetail(row) {
             this.currentFeedback = row;
             this.dialogVisible = true;
-            console.log('row',row);
             
             // 使用markdown-it渲染AI回答中的markdown内容
             if (row.ai_answer && this.md) {
@@ -787,8 +785,7 @@ module.exports = {
                 user_question: row.user_question,
                 conversation_messages: row.conversation_messages || []
             };
-            
-            console.log('当前行数据:', this.currentFeedbackForKnowledge);
+
             this.knowledgeDialogVisible = true;
             this.selectedKnowledgeNodes = [];
             this.regeneratedAnswer = '';
@@ -817,11 +814,10 @@ module.exports = {
             
             // 检查是否有引用知识点
             if (row.kb_reference && Array.isArray(row.kb_reference) && row.kb_reference.length > 0) {
-                console.log('获取到原始知识点引用:', row.kb_reference);
                 
                 // 提取所有的 kb_id
                 const kbIds = row.kb_reference.map(item => item.kb_id);
-                console.log('知识点ID列表:', kbIds);
+
                 
                 try {
                     // 根据选择的部门获取知识点内容
@@ -835,8 +831,6 @@ module.exports = {
                         knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
                     }
                     
-                    // console.log('获取到的知识点内容:', knowledgeContent);
-                    
                     // 转换kb_reference为知识点节点格式
                     this.originalKnowledgeNodes = row.kb_reference.map((item, index) => {
                         const content = knowledgeContent[index] || {};
@@ -847,8 +841,6 @@ module.exports = {
                             kb_simil: item.similarity || 0
                         };
                     });
-                    
-                    console.log('处理后的原始知识点:', this.originalKnowledgeNodes);
                     
                     // 备份原始知识点，用于重置
                     this.originalKnowledgeNodesBackup = JSON.parse(JSON.stringify(this.originalKnowledgeNodes));
@@ -888,7 +880,6 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log('获取到的部门列表:', data);
                 
                 if (data && data.departments && Array.isArray(data.departments)) {
                     this.departmentList = data.departments.map(item => ({
@@ -927,7 +918,7 @@ module.exports = {
             }
             
             try {
-                console.log(`开始获取 ${this.currentDepartmentName} 的知识分类数据`);
+                // console.log(`开始获取 ${this.currentDepartmentName} 的知识分类数据`);
                 
                 const response = await fetch(`${baseUrl}/api/department_taxonomy?department_name=${encodeURIComponent(this.currentDepartmentName)}`, {
                     method: 'GET',
@@ -942,7 +933,6 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`获取到的分类结构数据:`, data);
                 
                 // 验证响应数据格式
                 if (!data) {
@@ -953,7 +943,6 @@ module.exports = {
                 
                 // 转换API返回的数据为树形结构
                 this.knowledgeTree = this.processKnowledgeTaxonomy(data);
-                console.log(`转换后的知识树:`, this.knowledgeTree);
                 
                 if (this.knowledgeTree.length === 0) {
                     this.$message.warning('未找到有效的知识分类');
@@ -1041,7 +1030,7 @@ module.exports = {
         // 根据分类获取知识点列表
         async fetchKnowledgeByCategory(category, type = 'subcategory') {
             try {
-                console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点，类型: ${type}`);
+                //console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点，类型: ${type}`);
                 
                 let apiUrl;
                 
@@ -1069,13 +1058,11 @@ module.exports = {
                     throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
                 }
                 
-                const data = await response.json();
-                // console.log(`${category} 知识点数据:`, data);
-                
+                const data = await response.json();        
                 if (data && data.feedback_list) {
                     // 过滤掉无效的知识点
                     const validItems = data.feedback_list.filter(item => item && typeof item === 'object');
-                    console.log(`找到 ${validItems.length} 个有效知识点`);
+                    // console.log(`找到 ${validItems.length} 个有效知识点`);
                     
                     // 将知识点添加到对应的分类节点下
                     if (validItems.length > 0) {
@@ -1094,7 +1081,7 @@ module.exports = {
         
         // 将知识点添加到树中
         addKnowledgeItemsToTree(category, items, nodeType) {
-            console.log(`添加知识点到树中: 分类=${category}, 类型=${nodeType}, 知识点数量=${items ? items.length : 0}`);
+            // console.log(`添加知识点到树中: 分类=${category}, 类型=${nodeType}, 知识点数量=${items ? items.length : 0}`);
             
             if (!category || !items || !Array.isArray(items)) {
                 console.warn('无效的知识点数据:', { category, items });
@@ -1121,7 +1108,6 @@ module.exports = {
             
             const categoryNode = findCategoryNode(this.knowledgeTree, category);
             if (!categoryNode) {
-                console.warn(`未找到分类节点: ${category}`);
                 this.$message.warning(`未找到分类: ${category}`);
                 return;
             }
@@ -1169,7 +1155,6 @@ module.exports = {
                         const storeNode = this.$refs.knowledgeTree.store.nodesMap[categoryNode.id];
                         if (storeNode) {
                             storeNode.expanded = true;
-                            console.log(`节点 ${categoryNode.id} 已展开`);
                         } else {
                             console.warn(`未找到节点 ${categoryNode.id} 的存储信息`);
                         }
@@ -1188,8 +1173,6 @@ module.exports = {
         
         // 点击知识库节点
         handleKnowledgeNodeClick(data) {
-            console.log('点击节点:', data);
-            
             // 如果点击的是分类节点（非叶子节点）
             if (data.type === 'category') {
                 this.currentPreviewNode = {
@@ -1223,13 +1206,13 @@ module.exports = {
                 this.currentPreviewNode.isSelected = isSelected;
                 
                 // 打印节点信息，便于调试
-                console.log('点击知识点:', {
-                    id: data.id,
-                    key: data.key,
-                    label: data.label,
-                    isSelected: this.currentPreviewNode.isSelected,
-                    path: data.path
-                });
+                // console.log('点击知识点:', {
+                //     id: data.id,
+                //     key: data.key,
+                //     label: data.label,
+                //     isSelected: this.currentPreviewNode.isSelected,
+                //     path: data.path
+                // });
                 // 将最后一级分类传给不同的接口
                 if (this.selectedDepartment === '市医保中心') {
                 // 调用市医保中心的接口
@@ -1255,9 +1238,7 @@ module.exports = {
                 return;
             }
             
-            try {
-                console.log(`获取路径 ${path.join('/')} 下的知识点`);
-                
+            try {          
                 // 获取当前所选部门
                 const department = this.selectedDepartment;
                 
@@ -1490,9 +1471,9 @@ module.exports = {
                 const allKnowledgeItems = [...originalKnowledgeItems, ...newKnowledgeItems];
                 
                 // 在控制台打印JSON结构，便于调试
-                console.log('提交的原始知识点数据:', originalKnowledgeItems);
-                console.log('提交的新选择知识点数据:', newKnowledgeItems);
-                console.log('提交的所有知识点数据:', allKnowledgeItems);
+                // console.log('提交的原始知识点数据:', originalKnowledgeItems);
+                // console.log('提交的新选择知识点数据:', newKnowledgeItems);
+                // console.log('提交的所有知识点数据:', allKnowledgeItems);
                 
                 // 构建提交数据
                 const submitData = {
@@ -1524,7 +1505,6 @@ module.exports = {
         },
         // 删除单条反馈
         deletefeedback(row) {
-            console.log('row',row)
             this.$confirm('确认删除该反馈吗？', '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
@@ -1625,7 +1605,6 @@ module.exports = {
         },
         // 处理行展开
         handleRowExpand(row) {
-        // console.log('row',row)
             if (this.expandedRows.includes(row.md_id)) {
                 this.expandedRows = this.expandedRows.filter(id => id !== row.md_id);
             } else {
@@ -1641,7 +1620,6 @@ module.exports = {
             try {
                 // 更新当前行的处理意见
                 row.audit_status = row.audit_status || this.audit_status;
-                // console.log('审核意见已更改为:', row.audit_status, '反馈ID:', row.md_id);
             } catch (error) {
                 // 如果更新失败，恢复原来的值
                 this.getFeedbackTableData();
@@ -1650,7 +1628,6 @@ module.exports = {
         // 查看引用知识点详情
         async viewKbReference(row) {
             this.currentFeedback = row;
-            console.log('知识点row', row, row.department);
             
             if (row.kb_reference && Array.isArray(row.kb_reference)) {
                 //TODO: 需要修改  row.department === '市医保中心'
@@ -1704,12 +1681,8 @@ module.exports = {
                     // 政务中心处理逻辑
                     const kbIds = row.kb_reference.map(item => item.kb_id);
                     
-                    console.log('准备获取政务中心业务知识点，ID列表:', kbIds);
-                    
                     // 获取知识点内容
                     const knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
-                    
-                    console.log('获取到的政务中心业务知识点内容:', knowledgeContent);
                     
                     // 将获取到的内容与原始数据合并
                     const mergedKbReference = row.kb_reference.map((ref, index) => {
@@ -1737,8 +1710,6 @@ module.exports = {
                             kb_content: contentText
                         };
                     });
-
-                    console.log('合并后的知识点引用数据:', mergedKbReference);
 
                     // 更新当前反馈的知识点引用数据
                     this.currentFeedback = {
@@ -1860,8 +1831,6 @@ module.exports = {
                     kb_category: this.currentFeedbackForKnowledge.category || ''
                 };
 
-                console.log('AI生成请求数据:', requestData);
-
                 // 发送请求并处理流式响应
                 const response = await fetch(`${baseUrl}/v1/chat/completions`, {
                     method: 'POST',
@@ -1912,7 +1881,6 @@ module.exports = {
 
                             // 处理knowledge事件数据
                             if (currentEvent === "knowledge" && jsonStr.includes("kb_title")) {
-                                console.log("收到 knowledge 数据块:", jsonStr);
                                 try {
                                     // 尝试解析JSON字符串
                                     const knowledgeItem = JSON.parse(jsonStr);
@@ -2100,15 +2068,12 @@ module.exports = {
         // 添加获取政务中心业务知识点内容方法
         async fetchZwzxKnowledgeContent(kgids) {
             try {
-                console.log('请求政务中心知识点，IDs:', kgids);
                 const response = await axios.post(`${baseUrl}/api/govCenterKnowledge`, { ids:kgids }, {
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
                         'Content-Type': 'application/json'  
                     }
                 });
-                
-                console.log('政务中心知识点API返回数据:', response.data);
                 
                 if (response.data && response.data.feedback_list) {
                     return response.data.feedback_list;
@@ -2136,9 +2101,7 @@ module.exports = {
                 return;
             }
             
-            try {
-                console.log(`获取市医保中心分类 ${category1} 的知识点`);
-                
+            try {     
                 // 使用路径参数方式传递参数
                 const response = await fetch(`${baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category1)}`, {
                     method: 'GET',
@@ -2153,7 +2116,6 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`市医保中心知识点数据:`, data);
                 
                 if (data && data.feedback_list && Array.isArray(data.feedback_list)) {
                     // 获取当前点击的节点路径
@@ -2216,9 +2178,7 @@ module.exports = {
                 return;
             }
             
-            try {
-                console.log(`获取政务中心业务分类 ${category} 的知识点`);
-                
+            try {           
                 const queryParams = new URLSearchParams({
                     category: category
                 });
@@ -2236,7 +2196,6 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`政务中心业务知识点数据:`, data);
                 
                 if (data && data.knowledge && Array.isArray(data.knowledge)) {
                     // 获取当前点击的节点路径
@@ -2304,9 +2263,7 @@ module.exports = {
                 return;
             }
             
-            try {
-                console.log(`获取市监知识库分类 ${category1} 的知识点`);
-                
+            try { 
                 // 确保我们使用正确的接口
                 const response = await fetch(`${baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category1)}`, {
                     method: 'GET',
@@ -2321,7 +2278,6 @@ module.exports = {
                 }
                 
                 const data = await response.json();
-                console.log(`市监知识库知识点数据:`, data);
                 
                 if (data && data.feedback_list && Array.isArray(data.feedback_list)) {
                     // 获取当前点击的节点路径
@@ -2368,9 +2324,7 @@ module.exports = {
                             });
                         }
                     }
-                } else {
-                    console.warn(`市监知识库分类 ${category1} 下没有知识点数据`);
-                    
+                } else {             
                     // 尝试另一种可能的数据格式
                     if (data && Array.isArray(data)) {
                         // 获取当前点击的节点路径

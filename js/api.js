@@ -172,9 +172,10 @@ export function record_voice(audioBlob) {
     formData.append('model', 'FunAudioLLM/SenseVoiceSmall');
 
     // 发送请求
-    axios.post(`${BASE_URL_VOICE}/api/asr`, formData, {
+    axios.post(`${API_BASE_URL}/v1/asr`, formData, {
         headers: {
             "Content-Type": "multipart/form-data", // 设置请求头
+            "Authorization": API_AUTH_TOKEN
         },
     }).then(response => {
         console.log("识别结果:", response.data);

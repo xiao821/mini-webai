@@ -830,11 +830,11 @@ module.exports = {
                         knowledgeContent = await this.fetchKnowledgeContent(kbIds);
                     } else if (row.department === '市监知识库') {
                         knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
-                    } else if (row.department === '政务中心') {
+                    } else if (row.department === '政务中心业务') {
                         knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
                     }
                     
-                    console.log('获取到的知识点内容:', knowledgeContent);
+                    // console.log('获取到的知识点内容:', knowledgeContent);
                     
                     // 转换kb_reference为知识点节点格式
                     this.originalKnowledgeNodes = row.kb_reference.map((item, index) => {
@@ -1730,23 +1730,45 @@ module.exports = {
                         ...row,
                         kb_reference: mergedKbReference
                     };
-                } else if (row.department === '政务中心') {
+                } else if (row.department === '政务中心业务') {
                     // 政务中心处理逻辑
                     const kbIds = row.kb_reference.map(item => item.kb_id);
+                    
+                    console.log('准备获取政务中心业务知识点，ID列表:', kbIds);
                     
                     // 获取知识点内容
                     const knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
                     
+                    console.log('获取到的政务中心业务知识点内容:', knowledgeContent);
+                    
                     // 将获取到的内容与原始数据合并
                     const mergedKbReference = row.kb_reference.map((ref, index) => {
                         const content = knowledgeContent[index];
+                        
+                        // 先检查content对象是否存在
+                        if (!content) {
+                            console.warn(`未找到KB ID ${ref.kb_id}的知识点内容`);
+                            return {
+                                kb_id: ref.kb_id,
+                                similarity: ref.similarity,
+                                kb_title: '未找到该知识点',
+                                kb_content: '知识点内容获取失败'
+                            };
+                        }
+                        
+                        // 检查title和content字段
+                        const title = content.title || content.kb_title || '未知标题';
+                        const contentText = content.content || content.kb_content || '未知内容';
+                        
                         return {
-                            kb_id: ref.kb_id, // 保持kb_id字段一致
+                            kb_id: ref.kb_id,
                             similarity: ref.similarity,
-                            kb_title: content ? content.title : '',
-                            kb_content: content ? content.content : ''
+                            kb_title: title,
+                            kb_content: contentText
                         };
                     });
+
+                    console.log('合并后的知识点引用数据:', mergedKbReference);
 
                     // 更新当前反馈的知识点引用数据
                     this.currentFeedback = {
@@ -2108,19 +2130,24 @@ module.exports = {
         // 添加获取政务中心业务知识点内容方法
         async fetchZwzxKnowledgeContent(kgids) {
             try {
-                const response = await axios.post(`${baseUrl}/api/feedbackZwzxKnow_Cnt`, { ids:kgids }, {
+                console.log('请求政务中心知识点，IDs:', kgids);
+                const response = await axios.post(`${baseUrl}/api/govCenterKnowledge`, { ids:kgids }, {
                     headers: {
                         'Authorization': API_AUTH_TOKEN,
                         'Content-Type': 'application/json'  
                     }
                 });
                 
+                console.log('政务中心知识点API返回数据:', response.data);
+                
                 if (response.data && response.data.feedback_list) {
                     return response.data.feedback_list;
-                } 
-                return [];
+                } else {
+                    console.error('API返回数据结构不符合预期:', response.data);
+                    return [];
+                }
             } catch (error) {
-                console.error('获取知识点内容失败:', error);
+                console.error('获取政务中心知识点内容失败:', error);
                 // this.$message.error('获取知识点内容失败');
                 return [];
             }
@@ -2462,21 +2489,21 @@ module.exports = {
         this.getFeedbackTableData();
         this.getFeedbackTypes(); // 获取反馈类型列表
         // 移除这里的fetchDepartments调用，只在需要时（打开知识库弹窗时）才调用
-        // this.fetchDepartments();
+        this.fetchDepartments();
         
-        // 使用CDN加载markdown-it
-        // if (window.markdownit) {
-        //     this.md = window.markdownit({
-        //         html: true,
-        //         linkify: true,
-        //         typographer: true,
-        //         breaks: true
-        //     });
-        // } 
-        // else {
+        使用CDN加载markdown-it
+        if (window.markdownit) {
+            this.md = window.markdownit({
+                html: true,
+                linkify: true,
+                typographer: true,
+                breaks: true
+            });
+        } 
+        else {
             // 如果markdownit不存在，动态加载脚本
             const script = document.createElement('script');
-            // script.src = './external_js/markdown-it.js';
+            script.src = './external_js/markdown-it.js';
             script.onload = () => {
                 this.md = window.markdownit({
                     html: true,
@@ -2491,7 +2518,7 @@ module.exports = {
                 }
             };
             document.head.appendChild(script);
-        // }
+        }
     }
 }
 </script>

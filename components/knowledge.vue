@@ -481,7 +481,6 @@ module.exports =  {
             this.graphLoadingMessage = '正在生成知识图谱...';
             
             try {
-                console.log('生成知识图谱---------------:', item, decompositionJson);
                 // 解析JSON数据
                 // 如果decompositionJson是字符串，需要解析
                 let parsedData = decompositionJson;
@@ -627,7 +626,6 @@ module.exports =  {
             const nodeDataArray = [];
             const linkDataArray = [];
             
-            console.log('原始数据:', data);
             
             // 使用递归方法处理各种可能的数据结构
             const processNode = (node, parentKey = null, level = 0) => {
@@ -638,7 +636,6 @@ module.exports =  {
                 const key = node.key || node.kp_id || node.session || `node_${Math.random().toString(36).substr(2, 9)}`;
                 const title = node.title || node.text || node.name || node.content || '未命名节点';
                 
-                console.log('处理节点:', key, title);
                 
                 // 创建节点文本(包含details、contacts和links)
                 let nodeText = title;

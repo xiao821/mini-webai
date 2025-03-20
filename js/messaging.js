@@ -175,6 +175,9 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
     // 显示加载指示器
     appendTypingIndicator();
+    let fullContent = "";
+    let messageElement = null;
+    let contentElement = null;
 
     try {
         // 处理消息历史，只保留content和role字段
@@ -203,10 +206,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
             // 为AI回复创建ID
             const aiMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            let messageElement = null;
-            let contentElement = null;
 
-            let fullContent = "";
             let accumulatedContent = "";
             let think_status = 0;
             let firstCharacterRendered = false;
@@ -283,11 +283,11 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                                         const content = delta.content;
 
                                         if (content === "" || content.includes("<think>")) {
-                                            fullContent += "```思考过程";
+                                            fullContent += "<details open class='thinking-process-details'><summary>思考过程</summary><div class='thinking-process'>";
                                             think_status = 1;
                                             continue;
                                         } else if (content.includes("</think>")) {
-                                            fullContent += "```\n";
+                                            fullContent += "</div></details>";
                                             think_status = 2;
                                             continue;
                                         }
@@ -324,6 +324,9 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                 }
             }
 
+            // 确保解码器刷新所有剩余内容
+            decoder.decode();
+            
             // 处理可能剩余在缓冲区的JSON数据
             if (jsonBuffer && jsonBuffer.endsWith('}')) {
                 try {
@@ -369,12 +372,29 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             updateConversation(currentConversation);
             console.log('currentConversation', currentConversation);
 
+            // 在消息完成后，自动折叠所有思考过程
+            if (messageElement) {
+                setTimeout(() => {
+                    const details = messageElement.querySelectorAll('details.thinking-process-details');
+                    details.forEach(detail => {
+                        detail.removeAttribute('open');
+                    });
+                }, 100); // 延迟1秒后折叠，确保内容已完全渲染
+            }
+
             return true;
         } else {
             throw new Error("API响应格式错误");
         }
     } catch (error) {
         console.error('获取AI响应失败:', error);
+        
+        // 如果是AbortError且已经收到了响应，可以忽略这个错误
+        if (error.name === 'AbortError' && fullContent && fullContent.length > 0) {
+            console.log('流式响应已完成但连接被中断，这是预期行为');
+            return true;
+        }
+        
         removeTypingIndicator();
         appendMessage('system', '抱歉，发生了错误，请稍后再试。');
         return false;

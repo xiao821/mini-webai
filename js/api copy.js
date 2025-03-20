@@ -13,7 +13,8 @@ export async function generateId() {
         return response.data.chat_id;
     } catch (error) {
         console.error('获取会话ID失败:', error);
-        return 'local-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+        alert('获取会话ID失败:' + error);
+        // return 'local-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
     }
 }
 

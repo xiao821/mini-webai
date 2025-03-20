@@ -7,20 +7,33 @@
 <template>
     <div class="knowledge-container">
         <!-- 顶部操作栏 -->
-        <div class="knowledge-header">
+        <!-- <div class="knowledge-header">
             <el-button type="primary" @click="createNewNode">
                 <i class="el-icon-plus"></i> 新建条目
             </el-button>
             <el-button type="success" @click="fetchKnowledgeCategories">
                 <i class="el-icon-refresh"></i> 刷新数据
             </el-button>
-        </div>
+        </div> -->
 
         <!-- 主体内容区 -->
         <div class="knowledge-main">
             <!-- 左侧目录树 -->
             <div class="knowledge-sidebar">
                 <div class="search-box">
+                    <el-select 
+                        v-model="selectedDepartment" 
+                        placeholder="请选择单位" 
+                        size="small"
+                        style="width: 100%; margin-bottom: 10px;"
+                        @change="handleDepartmentChange">
+                        <el-option
+                            v-for="item in departmentOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                        </el-option>
+                    </el-select>
                     <el-input
                         v-model="filterText"
                         placeholder="搜索知识库"
@@ -45,12 +58,7 @@
                             <span class="custom-tree-node">
                                 <span class="node-icon-label">
                                     <i :class="getNodeIcon(data)"></i>
-                                    <span class="node-label">{{ node.label }}</span>
-                                </span>
-                                <span class="node-actions">
-                                    <el-button type="text" size="mini" @click.stop="() => appendNode(data)">
-                                        <i class="el-icon-plus"></i>
-                                    </el-button>
+                                    <span class="node-label">{{ stripHtmlTags(node.label) }}</span>
                                 </span>
                             </span>
                         </template>
@@ -89,8 +97,10 @@
                 </div>
                 
                 <!-- 如果选中的是分类节点，显示知识点列表 -->
-                <div v-else-if="currentNode && currentNode.type === 'category'" class="category-items">
-                    <h2>{{ currentNode.label }}</h2>
+                <div v-else-if="currentNode && (currentNode.type === 'category' || currentNode.type === 'subcategory')" class="category-items">
+                    <div class="category-header">
+                        <h2>{{ stripHtmlTags(currentNode.label) }}</h2>
+                    </div>
                     <el-divider></el-divider>
                     
                     <div v-if="knowledgeItems.length === 0" class="empty-items">
@@ -102,11 +112,24 @@
                         :key="item.kgid" 
                         class="knowledge-item-card" 
                         shadow="hover"
-                        :class="{'active-card': currentNode && currentNode.id === item.kgid}">
+                        :class="{'active-card': currentNode && currentNode.id === item.kgid}"
+                        @click="viewKnowledgeDetail(item)">
                         <template #header>
                             <div class="clearfix">
                                 <span>{{ item.title }}</span>
-                                <el-button style="float: right; padding: 3px 0" type="text" @click="editKnowledgeItem(item)">编辑</el-button>
+                                <div class="item-buttons">
+                                    <el-button type="text" size="mini" @click.stop="handleShowDialog1(item)">
+                                        <i class="el-icon-s-operation"></i> 知识分解
+                                    </el-button>
+                                    <el-button 
+                                        type="text" 
+                                        size="mini" 
+                                        @click.stop="showItemGraph(item, $event)"
+                                        :disabled="!decompositionJson"
+                                        :class="{'disabled-button': !decompositionJson}">
+                                        <i class="el-icon-share"></i> 知识图谱
+                                    </el-button>
+                                </div>
                             </div>
                         </template>
                         <div class="item-content">{{ item.content }}</div>
@@ -116,11 +139,65 @@
                 <!-- 未选中节点时显示空状态 -->
                 <div v-else class="empty-state">
                     <i class="el-icon-document"></i>
-                    <p>请选择查看一个知识库条目</p>
+                    <p>请选择点击查看一个知识库条目</p>
                     <!-- <el-button type="primary" @click="createNewNode">创建新条目</el-button> -->
                 </div>
             </div>
         </div>
+
+        <!-- 添加知识分解弹框 -->
+        <el-dialog
+            title="知识分解"
+            :visible="decompositionDialogVisible"
+            width="70%"
+            :fullscreen="false"
+            custom-class="knowledge-decomposition-dialog"
+            @close="closeDecompositionDialog">
+            <div v-if="isLoading" class="loading-container">
+                <el-progress type="circle" :percentage="loadingPercentage" :status="loadingStatus"></el-progress>
+                <p>{{ loadingMessage }}</p>
+            </div>
+            <div v-else>
+                <el-input
+                    type="textarea"
+                    :rows="25"
+                    placeholder="知识分解结果将在这里显示"
+                    v-model="decompositionResult"
+                    readonly>
+                </el-input>
+            </div>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="closeDecompositionDialog">关闭</el-button>
+                    <el-button type="primary" @click="saveDecompositionResult" :disabled="!decompositionResult">保存</el-button>
+                </div>
+            </template>
+        </el-dialog>
+
+        <!-- 添加知识图谱弹框 -->
+        <!-- custom-class="fullscreen-dialog"
+        :fullscreen="true" -->
+        <el-dialog
+            title="知识图谱"
+            :visible="graphDialogVisible"
+            width="70%"
+        :fullscreen="true"
+            custom-class="knowledge-graph-dialog"
+            @close="closeGraphDialog">
+            <div v-if="isGraphLoading" class="loading-container">
+                <el-progress type="circle" :percentage="graphLoadingPercentage" :status="graphLoadingStatus"></el-progress>
+                <p>{{ graphLoadingMessage }}</p>
+            </div>
+            <div v-else class="graph-container" id="knowledge-graph-container">
+                <!-- 知识图谱将在这里渲染 -->
+            </div>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="closeGraphDialog">关闭</el-button>
+                    <el-button @click="exportGraphAsSvg">导出SVG</el-button>
+                </div>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -131,9 +208,16 @@ module.exports =  {
         return {
             // API 配置
             apiConfig: {
+                // baseUrl: 'http://172.16.99.32:1030',
                 baseUrl: 'https://lgdev.baicc.cc/',
+                // baseUrl: '/nlprag/',
+                // baseUrl: 'http://172.16.99.32:1032',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
+            // 新增的部门选项
+            departmentOptions: [],
+            // 当前选中的部门
+            selectedDepartment: '',
             // 搜索过滤文本
             filterText: '',
             // 知识库树形数据
@@ -152,34 +236,112 @@ module.exports =  {
             // 当前选中的节点ID
             currentNodeId: null,
             // 展开的节点
-            expandedKeys: []
+            expandedKeys: [],
+            // 保存当前选中的知识项
+            currentKnowledgeItem: null,
+            // 新增的数据属性
+            decompositionDialogVisible: false,
+            graphDialogVisible: false,
+            decompositionResult: '',
+            decompositionJson: null,
+            isLoading: false,
+            loadingPercentage: 0,
+            loadingStatus: '',
+            loadingMessage: '正在生成知识分解...',
+            isGraphLoading: false,
+            graphLoadingPercentage: 0,
+            graphLoadingStatus: '',
+            graphLoadingMessage: '正在生成知识图谱...',
+            // 添加go对象引用
+            go: null,
         }
     },
     created() {
-        // 组件创建时获取知识点分类
-        this.fetchKnowledgeCategories();
+        // 组件创建时获取部门列表
+        this.fetchDepartments();
+    },
+    mounted() {
+        this.decompositionDialogVisible = false;
+        this.graphDialogVisible = false;
+        
+        // 加载GoJS库
+        this.loadGoJSLibrary();
     },
     watch: {
         // 监听搜索文本变化
         filterText(val) {
             this.$refs.tree.filter(val);
-        },
-        // 监听路由参数变化
-        '$route.query.id': {
-            handler(id) {
-                if (id) {
-                    this.loadNodeById(id);
-                }
-            },
-            immediate: true
         }
     },
-    methods: {
-        // 获取知识点分类
-        async fetchKnowledgeCategories() {
-            this.loading = true;
-            try {
-                const response = await fetch(`${this.apiConfig.baseUrl}api/feedback/getKnowleCate/`, {
+    methods: {  
+        // 添加GoJS库加载方法
+        loadGoJSLibrary() {
+            // 检查是否已经存在
+            if (window.go) {
+                this.go = window.go;
+                console.log('GoJS库已加载');
+                return;
+            }
+            
+            // 动态加载GoJS
+            const script = document.createElement('script');
+            // script.src = 'https://unpkg.com/gojs@2.3.5/release/go.js';
+            script.async = true;
+            script.onload = () => {
+                this.go = window.go;
+                console.log('GoJS库加载成功');
+            };
+            script.onerror = () => {
+                console.error('GoJS库加载失败');
+            };
+            document.head.appendChild(script);
+        },
+        // 关闭知识分解弹框
+        closeDecompositionDialog() {
+            this.decompositionDialogVisible = false;
+            this.decompositionResult = '';
+            this.isLoading = false;
+            // 不要清除decompositionJson，因为需要用于显示知识图谱
+        },
+        
+        // 知识分解按钮点击事件
+        handleShowDialog1(item) {
+            this.decompositionDialogVisible = true;
+            
+            // 保存当前选中的知识项
+            this.currentKnowledgeItem = item;
+            
+            // 确保在下一个事件循环中执行
+            this.$nextTick(() => {
+                // 开始生成知识分解
+                if (item && item.content) {
+                    this.generateDecomposition(item);
+                } else {
+                    console.error('知识项数据不完整', item);
+                }
+            });
+        },
+
+        // 生成知识分解
+        async generateDecomposition(item) {
+            if (!item || !item.content) {
+                this.$message.error('知识项数据不完整，无法进行分解');
+                return;
+            }
+            
+            this.isLoading = true; // 显示加载状态
+            this.loadingMessage = '正在生成知识分解...';
+            console.log('生成知识分解:', item);
+            try { 
+                // 构建请求数据
+                const requestData = {
+                    department: this.selectedDepartment,
+                    content: item.content
+                };
+                
+                // 调用知识分解API
+                const apiUrl = `${this.apiConfig.baseUrl}/api/knowledge_graph?department=${encodeURIComponent(this.selectedDepartment)}&content=${encodeURIComponent(item.content)}`;
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Authorization': this.apiConfig.token,
@@ -188,21 +350,491 @@ module.exports =  {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('获取分类失败');
+                    const errorText = await response.text();
+                    throw new Error(`生成知识分解失败: ${response.status} ${errorText}`);
                 }
                 
                 const data = await response.json();
                 
-                if (data && data.knowledge_list && data.knowledge_list.length > 0) {
-                    const treeJson = JSON.parse(data.knowledge_list[0].tree_json);
-                    this.knowledgeTree = this.transformCategoryTree(treeJson);
+                // 处理返回的数据格式
+                if (data && data.results && data.results.length > 0) {
+                    const result = data.results[0];
                     
-                    // 不再默认展开节点
-                    this.expandedKeys = [];
+                    // 提取并显示markdown内容
+                    if (result.knol_md) {
+                        this.decompositionResult = result.knol_md;
+                        this.isLoading = false; // 关闭加载状态
+                    } else {
+                        this.decompositionResult = '未找到分解结果的Markdown内容';
+                    }
+                    
+                    // 处理知识图谱数据
+                    if (result.knol_data) {
+                        try {
+                            // 尝试解析knol_data字符串为JSON对象
+                            const knolDataObj = JSON.parse(result.knol_data);
+                            this.decompositionJson = knolDataObj;
+                            
+                            // 将分解结果保存到当前知识项
+                            if (this.currentKnowledgeItem) {
+                                this.currentKnowledgeItem.decompositionJson = knolDataObj;
+                            }
+
+                            console.log('知识图谱分解结果:', result.knol_data);
+                            
+                            // 知识分解成功后提示用户可以查看知识图谱
+                            this.$message.success('知识分解成功，现在您可以查看知识图谱');
+                            
+                            // 触发分解生成后的事件
+                            this.onDecompositionGenerated(knolDataObj);
+                        } catch (e) {
+                            console.error('解析知识图谱数据失败:', e);
+                            this.decompositionJson = null;
+                            this.$message.error('知识图谱数据解析失败');
+                        }
+                    } else {
+                        this.decompositionJson = null;
+                        this.$message.warning('未找到可用的知识图谱数据');
+                    }
+                } else {
+                    throw new Error('API返回的数据格式不正确');
                 }
                 
             } catch (error) {
-                console.error('获取知识点分类失败:', error);
+                this.isLoading = false;
+                this.$message.error('生成知识分解失败: ' + error.message);
+            }
+        },
+
+        // 知识分解生成后的处理
+        onDecompositionGenerated(decomposition) {
+            console.log('知识分解生成后的处理:', decomposition);
+            // 在这里可以添加处理逻辑，例如保存分解结果到数据库
+        },
+
+        // 保存分解结果
+        saveDecompositionResult() {
+            if (!this.decompositionResult || !this.currentKnowledgeItem) {
+                this.$message.warning('没有可保存的分解结果');
+                return;
+            }
+            
+            // 这里可以添加保存到后端的逻辑
+            this.$message.success('分解结果已保存');
+            this.closeDecompositionDialog();
+        },
+
+        // 显示知识图谱
+        showItemGraph(item, event) {
+            // 阻止事件冒泡，防止触发卡片点击
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            console.log('显示知识图谱:', item);
+            
+            // 保存当前选中的知识项
+            this.currentKnowledgeItem = item;
+            
+            // 检查是否已经进行过知识分解
+            if (!this.decompositionJson) {
+                this.$message.warning('请先点击"知识分解"按钮，生成知识分解结果后再查看知识图谱');
+                return;
+            }
+            
+            // 打开图谱弹框并生成图谱
+            this.graphDialogVisible = true;
+            
+            // 生成知识图谱
+            this.generateKnowledgeGraph(this.currentKnowledgeItem, this.decompositionJson);
+        },
+
+        // 关闭图谱弹框
+        closeGraphDialog() {
+            this.graphDialogVisible = false;
+            this.isGraphLoading = false;
+            
+            // 正确释放GoJS图表实例
+            if (this.myDiagram) {
+                this.myDiagram.div = null;  // 断开与DOM元素的连接
+                this.myDiagram = null;      // 清空实例引用
+            }
+            
+            // 清空图谱容器
+            const container = document.getElementById('knowledge-graph-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+            
+            // 不要清除decompositionJson，因为可能还需要再次查看图谱
+        },
+
+        // 生成知识图谱
+        async generateKnowledgeGraph(item, decompositionJson) {
+            if (!item || !decompositionJson) {
+                this.$message.error('数据不完整，无法生成知识图谱');
+                return;
+            }
+            
+            this.isGraphLoading = true;
+            this.graphLoadingPercentage = 0;
+            this.graphLoadingStatus = '';
+            this.graphLoadingMessage = '正在生成知识图谱...';
+            
+            try {
+                // 解析JSON数据
+                // 如果decompositionJson是字符串，需要解析
+                let parsedData = decompositionJson;
+                if (typeof decompositionJson === 'string') {
+                    try {
+                        parsedData = JSON.parse(decompositionJson);
+                    } catch (e) {
+                        console.error('分解数据不是有效的JSON:', e);
+                    }
+                }
+                
+                // 将loading进度调整为100%
+                this.graphLoadingPercentage = 100;
+                this.graphLoadingStatus = 'success';
+                
+                // 延迟关闭加载状态，渲染图谱
+                setTimeout(() => {
+                    this.isGraphLoading = false;
+                    
+                    // 在这里渲染图谱
+                    this.$nextTick(() => {
+                        this.renderKnowledgeGraph(parsedData);
+                    });
+                }, 500);
+                
+            } catch (error) {
+                this.$message.error('生成知识图谱失败: ' + error.message);
+                this.isGraphLoading = false;
+            }
+        },
+
+        // 渲染知识图谱 - 支持多层级结构
+        renderKnowledgeGraph(graphData) {
+            const container = document.getElementById('knowledge-graph-container');
+            if (!container) {
+                console.error('找不到图谱容器元素');
+                return;
+            }
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 确保GoJS已加载
+            if (!window.go && !this.go) {
+                container.innerHTML = '<div style="padding: 20px; color: red;">GoJS库未加载，请刷新页面重试</div>';
+                console.error('GoJS库未加载');
+                return;
+            }
+            
+            const go = window.go || this.go;
+            
+            try {
+                // 创建GoJS图表 - 使用树形布局
+                this.myDiagram = new go.Diagram(container, {
+                    "undoManager.isEnabled": true,  // 启用撤销/重做
+                    layout: new go.TreeLayout({
+                        angle: 90,  // 垂直布局
+                        nodeSpacing: 40,  // 增加节点间距
+                        layerSpacing: 80,  // 增加层级间距
+                        arrangement: go.TreeLayout.ArrangementVertical
+                    }),
+                    "animationManager.isEnabled": true,
+                    initialContentAlignment: go.Spot.Center
+                });
+                
+                // 定义节点模板 - 使用简单文本块先确保基本功能可用
+                this.myDiagram.nodeTemplate = new go.Node("Auto")
+                    .add(
+                        new go.Shape("RoundedRectangle", {
+                            fill: "white", 
+                            stroke: "#333",
+                            strokeWidth: 1,
+                            minSize: new go.Size(250, 60)  // 增加最小尺寸
+                        }).bind("fill", "level", level => {
+                            // 根据层级返回不同的颜色
+                            const colors = [
+                                "#e6f7ff", // 根节点
+                                "#fffbe6", // 一级节点
+                                "#f6ffed", // 二级节点
+                                "#fff1f0", // 三级节点
+                                "#f9f0ff"  // 更深层级节点
+                            ];
+                            return colors[Math.min(level, colors.length - 1)] || "#ffffff";
+                        }),
+                        new go.TextBlock({
+                            margin: 10,
+                            font: "12px sans-serif",
+                            stroke: "#333",
+                            wrap: go.TextBlock.WrapFit,
+                            textAlign: "left",
+                            width: 280,
+                            editable: false
+                        }).bind("text", "text")
+                         .bind("font", "level", level => {
+                             // 根据层级返回不同的字体样式
+                             if (level === 0) return "bold 15px sans-serif";
+                             if (level === 1) return "bold 14px sans-serif";
+                             return "12px sans-serif";
+                         })
+                    );
+                
+                // 定义链接模板 - 简化线条
+                this.myDiagram.linkTemplate =
+                    new go.Link()
+                        .add(
+                            new go.Shape({
+                                stroke: "#555",
+                                strokeWidth: 1.2
+                            }),
+                            new go.Shape({
+                                toArrow: "Standard",
+                                fill: "#555",
+                                stroke: null,
+                                scale: 0.8
+                            })
+                        );
+                
+                // 转换数据结构为GoJS可用的格式
+                const { nodeDataArray, linkDataArray } = this.convertToGraphModel(graphData);
+                
+                // 如果没有数据，显示简单的提示
+                if (nodeDataArray.length === 0) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center;">没有可显示的知识图谱数据</div>';
+                    return;
+                }
+                
+                console.log('渲染节点数据:', nodeDataArray);
+                
+                // 设置模型数据
+                this.myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+                
+                // 自动缩放以适应所有内容
+                this.myDiagram.zoomToFit();
+                
+            } catch (error) {
+                console.error('渲染知识图谱时出错:', error);
+                container.innerHTML = `<div style="padding: 20px; color: red;">图谱渲染失败: ${error.message}</div>`;
+            }
+        },
+
+        // 数据结构转换工具：将层次结构转换为图表可用的节点和链接数组
+        convertToGraphModel(data) {
+            const nodeDataArray = [];
+            const linkDataArray = [];
+            
+            
+            // 使用递归方法处理各种可能的数据结构
+            const processNode = (node, parentKey = null, level = 0) => {
+                // 如果节点无效，则跳过
+                if (!node) return null;
+                
+                // 提取节点键和标题
+                const key = node.key || node.kp_id || node.session || `node_${Math.random().toString(36).substr(2, 9)}`;
+                const title = node.title || node.text || node.name || node.content || '未命名节点';
+                
+                
+                // 创建节点文本(包含details、contacts和links)
+                let nodeText = title;
+                
+                // 处理详情内容
+                if (node.details) {
+                    if (Array.isArray(node.details)) {
+                        // 如果是数组，添加概要
+                        nodeText += '\n\n详情: ' + node.details.join(' | ');
+                    } else if (typeof node.details === 'string') {
+                        nodeText += '\n\n详情: ' + node.details;
+                    }
+                }
+                
+                // 处理联系人信息
+                if (node.contacts && Array.isArray(node.contacts) && node.contacts.length > 0) {
+                    nodeText += '\n\n联系方式: ';
+                    node.contacts.forEach(contact => {
+                        if (contact.name) nodeText += contact.name + ' ';
+                        if (contact.address) nodeText += contact.address + ' ';
+                        if (contact.hours) nodeText += contact.hours;
+                    });
+                }
+                
+                // 处理链接信息
+                if (node.links && Array.isArray(node.links) && node.links.length > 0) {
+                    nodeText += '\n\n相关链接: ';
+                    node.links.forEach(link => {
+                        if (link.name) nodeText += link.name + ' ';
+                        if (link.url) nodeText += link.url;
+                    });
+                }
+                
+                // 将节点添加到节点数组
+                nodeDataArray.push({
+                    key: key,
+                    text: nodeText,
+                    level: level,  // 记录节点层级以支持样式区分
+                    originalData: node  // 保存原始数据，以便需要时可以访问
+                });
+                
+                // 如果有父节点，则创建连接
+                if (parentKey !== null) {
+                    linkDataArray.push({
+                        from: parentKey,
+                        to: key
+                    });
+                }
+                
+                // 处理子节点 - 支持多种可能的子节点属性名称
+                const childrenArrays = [
+                    node.children,
+                    node.items,
+                    node.subitems,
+                    node.knowledge_points,
+                    node.sub_points,
+                    node.subNodes
+                ];
+                
+                // 处理所有可能的子节点数组
+                childrenArrays.forEach(childrenArray => {
+                    if (Array.isArray(childrenArray)) {
+                        childrenArray.forEach(child => {
+                            // 如果子项是字符串，则为其创建一个对象结构
+                            if (typeof child === 'string') {
+                                child = { 
+                                    key: `child_${Math.random().toString(36).substr(2, 9)}`, 
+                                    title: child 
+                                };
+                            }
+                            processNode(child, key, level + 1);
+                        });
+                    }
+                });
+                
+                return key;
+            };
+            
+            // 开始处理根节点
+            processNode(data, null, 0);
+            
+            console.log('转换后的节点数组:', nodeDataArray);
+            console.log('转换后的链接数组:', linkDataArray);
+            
+            return { nodeDataArray, linkDataArray };
+        },
+        // 单位变化处理
+        handleDepartmentChange() {
+            console.log(`部门切换为: ${this.selectedDepartment}`);
+            
+            // 清空当前数据
+            this.knowledgeTree = [];
+            this.knowledgeItems = [];
+            this.currentNode = null;
+            this.currentNodeId = null;
+            this.filterText = '';
+            
+            // 重新获取分类数据
+            this.fetchKnowledgeCategories();
+            
+            // 提示用户
+            this.$message({
+                type: 'info',
+                message: `已切换到${this.selectedDepartment}知识库`
+            });
+        },
+        
+        // 获取部门列表
+        async fetchDepartments() {
+            try {
+                const apiUrl = `${this.apiConfig.baseUrl}/api/departments`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': this.apiConfig.token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取部门列表失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data && data.departments) {
+                    // 转换部门数据为选项格式
+                    this.departmentOptions = data.departments.map(dept => ({
+                        value: dept.department_name,
+                        label: dept.department_name
+                    }));
+                    
+                    // 如果有部门数据，默认选择第一个
+                    if (this.departmentOptions.length > 0) {
+                        this.selectedDepartment = this.departmentOptions[0].value;
+                        // 获取该部门的知识分类
+                        this.fetchKnowledgeCategories();
+                    }
+                } else {
+                    console.warn('部门数据格式不正确');
+                    this.$message.warning('获取部门列表数据格式不正确');
+                }
+            } catch (error) {
+                console.error('获取部门列表失败:', error);
+                this.$message.error('获取部门列表失败: ' + error.message);
+            }
+        },
+        
+        // 获取知识点分类
+        async fetchKnowledgeCategories() {
+            this.loading = true;
+            this.knowledgeTree = []; // 清空现有树数据
+            
+            try {
+                console.log(`开始获取 ${this.selectedDepartment} 的知识分类数据`);
+                
+                const apiUrl = `${this.apiConfig.baseUrl}/api/department_taxonomy?department_name=${encodeURIComponent(this.selectedDepartment)}`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': this.apiConfig.token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('响应错误:', errorText);
+                    throw new Error(`获取分类失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                if (data) {
+                    // 转换分类数据为树形结构
+                    this.knowledgeTree = this.transformCategoryTree(data);
+                    console.log(`${this.selectedDepartment} 转换后的知识树:`, this.knowledgeTree);
+                    
+                    // 清空当前选中的节点
+                    this.currentNode = null;
+                    this.currentNodeId = null;
+                    this.knowledgeItems = [];
+                    
+                    // 如果树不为空，可以默认展开第一级
+                    if (this.knowledgeTree.length > 0) {
+                        this.$nextTick(() => {
+                            let maxDepth = this.getMaxDepth(this.knowledgeTree);
+                            let expandLevel = maxDepth > 1 ? maxDepth - 1 : maxDepth;
+                            this.expandNodesRecursively(this.knowledgeTree, expandLevel);
+                        });
+                    } else {
+                        console.warn(`${this.selectedDepartment} 转换后的知识树为空`);
+                    }
+                } else {
+                    console.warn(`${this.selectedDepartment} 返回数据为空`);
+                    this.$message.warning('获取知识点分类数据为空');
+                }
+                
+            } catch (error) {
+                console.error(`获取 ${this.selectedDepartment} 知识点分类失败:`, error);
                 this.$message.error('获取知识点分类失败: ' + error.message);
             } finally {
                 this.loading = false;
@@ -210,29 +842,55 @@ module.exports =  {
         },
         
         // 转换分类树结构
-        transformCategoryTree(treeJson) {
-            return treeJson.map((category, index) => {
-                const result = {
-                    id: `category-${index}`,
-                    label: category.name,
-                    name: category.name,
-                    type: 'category',
+        transformCategoryTree(data) {
+            if (!data || !data.items) {
+                console.log('分类数据无效或为空');
+                return [];
+            }
+            
+            console.log('开始转换知识树数据:', data);
+            
+            try {
+                // 递归处理节点
+                const processNode = (node, parentId = null, level = 0) => {
+                    if (!node || !node.key) return null;
+                    
+                    const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+                    const nodeData = {
+                        id: nodeId,
+                        label: node.key,
+                        name: node.key,
+                        type: 'category', // 默认为category类型
+                        level: level
+                    };
+                    
+                    // 如果有父节点，添加父节点ID
+                    if (parentId) {
+                        nodeData.parentId = parentId;
+                    }
+                    
+                    // 处理子节点
+                    if (node.items && node.items.length > 0) {
+                        nodeData.children = node.items
+                            .map(child => processNode(child, nodeId, level + 1))
+                            .filter(child => child !== null);
+                    } else {
+                        // 如果没有子节点，则标记为subcategory（最后一级分类）
+                        nodeData.type = 'subcategory';
+                    }
+                    
+                    return nodeData;
                 };
                 
-                if (category.children && category.children.length > 0) {
-                    result.children = category.children.map((subCategory, subIndex) => {
-                        return {
-                            id: `category-${index}-${subIndex}`,
-                            label: subCategory.name,
-                            name: subCategory.name,
-                            type: 'category',
-                            parentId: `category-${index}`
-                        };
-                    });
-                }
-                
-                return result;
-            });
+                // 处理根节点的子节点
+                return data.items
+                    .map(item => processNode(item))
+                    .filter(item => item !== null);
+                    
+            } catch (error) {
+                console.error('转换知识树数据时出错:', error);
+                return [];
+            }
         },
         
         // 根据分类获取知识点列表
@@ -241,7 +899,33 @@ module.exports =  {
             this.loading = true;
             
             try {
-                const response = await fetch(`${this.apiConfig.baseUrl}api/feedback/getKnowle/${encodeURIComponent(category)}`, {
+                console.log(`获取 ${this.selectedDepartment} 下 ${category} 分类的知识点`);
+                
+                const params = {
+                    category: category
+                };
+                
+                // 根据不同部门选择不同的API接口
+                let apiUrl;
+                
+                if (this.selectedDepartment === '市医保中心') {
+                    // 市医保中心知识库使用 sjj_knowledge 接口
+                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getKnowle/${encodeURIComponent(category)}`;
+                } else if (this.selectedDepartment === '政务中心业务') {
+                    // 政务中心业务使用 zwzx_knowledge 接口，使用参数形式
+                    apiUrl = `${this.apiConfig.baseUrl}/api/zwzx_knowledge?category=${encodeURIComponent(category)}`;
+                } else if (this.selectedDepartment === '市监知识库') {
+                    // 市监知识库使用 getLGKnowle 接口
+                    apiUrl = `${this.apiConfig.baseUrl}/api/feedback/getLGKnowle/${encodeURIComponent(category)}`;
+                }
+                
+                console.log('知识点请求URL:', apiUrl);
+                
+                if (!apiUrl) {
+                    throw new Error(`未找到 ${this.selectedDepartment} 的对应接口`);
+                }
+                
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Authorization': this.apiConfig.token,
@@ -250,18 +934,43 @@ module.exports =  {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('获取知识点失败');
+                    throw new Error(`获取知识点失败: ${response.status} ${response.statusText}`);
                 }
                 
                 const data = await response.json();
+                console.log(`${category} 知识点数据:`, data);
                 
-                if (data && data.feedback_list) {
+                // 根据不同接口处理返回的数据格式
+                if (this.selectedDepartment === '政务中心业务' && data && data.knowledge) {
+                    // 政务中心业务返回格式处理
+                    this.knowledgeItems = data.knowledge.map(item => {
+                        // 解析知识项，格式为"标题,内容"
+                        const parts = item.split(',');
+                        let title = parts[0] || '';
+                        // 去掉内容中的引号
+                        let content = parts.length > 1 ? parts[1].replace(/^"|"$/g, '') : '';
+                        
+                        return {
+                            title: title,
+                            content: content,
+                            kgid: Math.random().toString(36).substr(2, 9)  // 生成临时ID
+                        };
+                    });
+                } else if (data && data.feedback_list) {
+                    // 市医保中心和市监知识库使用相同的返回格式
                     this.knowledgeItems = data.feedback_list;
+                } else {
+                    console.warn(`${category} 知识点数据格式不符合预期:`, data);
+                    this.$message.warning('获取知识点数据格式不正确');
+                    this.knowledgeItems = [];
                 }
                 
+                console.log(`获取到 ${this.knowledgeItems.length} 条知识点`);
+                
             } catch (error) {
-                console.error('获取知识点失败:', error);
+                console.error(`获取 ${category} 知识点失败:`, error);
                 this.$message.error('获取知识点失败: ' + error.message);
+                this.knowledgeItems = [];
             } finally {
                 this.loading = false;
             }
@@ -278,9 +987,15 @@ module.exports =  {
             this.currentNode = JSON.parse(JSON.stringify(data));
             this.currentNodeId = data.id;
             
-            // 如果点击的是分类节点，获取该分类下的知识点
-            if (data.type === 'category') {
+            console.log('点击节点:', data);
+            
+            // 检查是否是最后一级分类（没有子节点或type为subcategory）
+            if (data.type === 'subcategory' || ((!data.children || data.children.length === 0) && data.type === 'category')) {
+                // 调用接口获取该分类下的知识项
                 this.fetchKnowledgeByCategory(data.name);
+            } else {
+                // 如果点击的是中间级别的分类，清空知识点列表
+                this.knowledgeItems = [];
             }
         },
         
@@ -310,7 +1025,7 @@ module.exports =  {
             
             this.currentNode = {
                 id: item.kgid,
-                label: item.title,
+                label: this.stripHtmlTags(item.title),
                 content: item.content,
                 category: currentCategory,
                 parentCategory: parentCategory,
@@ -365,52 +1080,7 @@ module.exports =  {
             // 重置树的当前选中节点
             this.currentNodeId = null;
         },
-        
-        // 在指定节点下添加子节点
-        appendNode(data) {
-            const newChild = {
-                id: Date.now().toString(),
-                label: '新建子条目',
-                type: 'item',
-                content: ''
-            };
-            if (!data.children) {
-                this.$set(data, 'children', []);
-            }
-            data.children.push(newChild);
-        },
-        
-        // 保存节点
-        saveNode() {
-            // 这里实现保存逻辑
-            this.$message({
-                type: 'success',
-                message: '保存成功'
-            });
-        },
-        
-        // 删除节点
-        deleteNode() {
-            this.$confirm('确认删除该条目?', '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-            }).then(() => {
-                // 这里实现删除逻辑
-                this.$message({
-                    type: 'success',
-                    message: '删除成功'
-                });
-                this.currentNode = null;
-            }).catch(() => {});
-        },
-        
-        // 根据ID加载节点
-        loadNodeById(id) {
-            // 这里实现根据ID加载节点的逻辑
-            console.log('加载节点:', id);
-        },
-        
+           
         // 获取节点图标
         getNodeIcon(data) {
             if (data.type === 'category') {
@@ -419,12 +1089,107 @@ module.exports =  {
                 return 'el-icon-document';
             }
             return '';
+        },
+        
+        // 移除HTML标签
+        stripHtmlTags(text) {
+            if (!text) return '';
+            return text.replace(/<\/?[^>]+(>|$)/g, '');
+        },
+        
+        // 查看知识点详情
+        viewKnowledgeDetail(item) {
+            // 如果选择了不同的知识项，清除之前的分解数据
+            if (this.currentKnowledgeItem && this.currentKnowledgeItem.kgid !== item.kgid) {
+                this.decompositionJson = null;
+                this.decompositionResult = '';
+            }
+            
+            this.editKnowledgeItem(item);
+        },
+
+        // 导出图谱为SVG并下载
+        exportGraphAsSvg() {
+            if (!this.myDiagram) {
+                this.$message.error('图谱尚未渲染，无法导出');
+                return;
+            }
+            
+            try {
+                // 创建SVG元素
+                const svg = this.myDiagram.makeSvg({
+                    scale: 1,
+                    background: "white" // 设置背景颜色
+                });
+                
+                // 转换SVG为字符串
+                const serializer = new XMLSerializer();
+                let svgString = serializer.serializeToString(svg);
+                
+                // 添加XML声明和DOCTYPE
+                svgString = '<?xml version="1.0" encoding="utf-8"?>\n' + svgString;
+                
+                // 将SVG字符串转换为Blob
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                
+                // 设置文件名 - 使用知识点标题或默认名称
+                const fileName = (this.currentKnowledgeItem && this.currentKnowledgeItem.title) 
+                    ? `知识图谱_${this.currentKnowledgeItem.title}.svg`
+                    : '知识图谱.svg';
+                
+                link.download = fileName;
+                
+                // 模拟点击下载
+                document.body.appendChild(link);
+                link.click();
+                
+                // 清理
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                
+                this.$message.success('图谱已导出为SVG文件');
+            } catch (error) {
+                console.error('导出SVG时出错:', error);
+                this.$message.error('导出SVG失败: ' + error.message);
+            }
+        },
+
+        getMaxDepth(nodes) {
+            let max = 0;
+            function traverse(arr) {
+                arr.forEach(node => {
+                    if (node.level > max) max = node.level;
+                    if (node.children && node.children.length > 0) {
+                        traverse(node.children);
+                    }
+                });
+            }
+            traverse(nodes);
+            return max;
+        },
+
+        expandNodesRecursively(nodes, expandLevel) {
+            nodes.forEach(node => {
+                if (node.level < expandLevel) {
+                    let treeNode = this.$refs.tree.store.nodesMap[node.id];
+                    if (treeNode) {
+                        treeNode.expanded = true;
+                    }
+                    if (node.children && node.children.length > 0) {
+                        this.expandNodesRecursively(node.children, expandLevel);
+                    }
+                }
+            });
         }
     }
 }
 </script>
 
-<style>
+<style scoped>
 .knowledge-container {
     height: 100%;
     display: flex;
@@ -526,15 +1291,6 @@ module.exports =  {
     text-overflow: ellipsis;
 }
 
-.node-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.custom-tree-node:hover .node-actions {
-    opacity: 1;
-}
-
 .knowledge-content {
     flex: 1;
     padding: 20px;
@@ -573,6 +1329,9 @@ module.exports =  {
 .item-content {
     white-space: pre-line;
     line-height: 1.6;
+    padding: 0 20px;
+    font-size: 14px;
+    color: #606266;
 }
 
 .empty-items {
@@ -610,5 +1369,135 @@ module.exports =  {
 
 .el-tree-node__expand-icon.is-leaf {
     color: transparent;
+}
+
+.el-card__header {
+    padding: 15px 20px;
+    font-weight: bold;
+    font-size: 16px;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.el-card__body {
+    padding: 15px 0;
+}
+
+.knowledge-item-card .clearfix {
+    display: flex;
+    align-items: center;
+}
+
+.knowledge-item-card .clearfix span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.category-header h2 {
+    margin: 0;
+}
+
+.item-buttons {
+    float: right;
+}
+
+.item-buttons .el-button {
+    margin-left: 5px;
+}
+
+/* 新增样式 */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.loading-container p {
+    margin-top: 20px;
+    color: #606266;
+}
+
+.graph-container {
+    height: 75vh;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+    background-color: #f5f7fa;
+}
+
+.el-dialog__body{
+    padding: 10px;
+}
+
+/* 添加知识图谱弹框样式 */
+:deep(.knowledge-graph-dialog) {
+    height: 75vh;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep(.knowledge-graph-dialog.el-dialog) {
+    margin-top: 2.5vh !important;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__header) {
+    padding: 15px 20px;
+}
+
+:deep(.knowledge-graph-dialog .el-dialog__footer) {
+    padding: 10px 20px;
+}
+
+/* 添加知识分解弹框样式 */
+:deep(.knowledge-decomposition-dialog) {
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep(.knowledge-decomposition-dialog.el-dialog) {
+    margin-top: 2.5vh !important;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__body) {
+    flex: 1;
+    overflow: auto;
+    padding: 15px;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__header) {
+    padding: 15px 20px;
+}
+
+:deep(.knowledge-decomposition-dialog .el-dialog__footer) {
+    padding: 10px 20px;
+}
+
+:deep(.el-textarea__inner) {
+    height: 100%;
+    min-height: 65vh;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.disabled-button {
+    color: #c0c4cc !important;
+    cursor: not-allowed !important;
 }
 </style> 

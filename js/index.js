@@ -3,7 +3,7 @@ import { sendMessage } from './messaging.js';
 import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
-import { modeConfig, QW_MODEL, R1_MODEL } from './config.js';
+import { modeConfig, QW_MODEL, R1_MODEL, USER_ID } from './config.js';
 import { record_voice } from './api.js';
 import { initKnowledgeCategory } from './knowledge_category.js';
 
@@ -24,8 +24,15 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeApp();
 
     // 获取userid，存入cookie中
-    setRandomIdInCookie()
+    setRandomIdInCookie();
 
+    // 设置登录时间
+    setLoginTime();
+
+    // 设置用户名
+    setUserName();
+
+    // 渲染模式按钮
     renderModeButtons();
 
     // 添加事件监听
@@ -36,10 +43,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 初始化延迟加载功能
     lazyLoadObserver = initializeLazyLoading();
-
-    // 初始加载默认模式欢迎信息
-    // setWelcomeMessage('default');
 });
+
+// 设置登录时间
+function setLoginTime() {
+    const loginTimeElement = document.getElementById('login-time');
+    if (loginTimeElement) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        loginTimeElement.textContent = timeString;
+    }
+}
+
+// 设置用户名
+function setUserName() {
+    const userNameElement = document.getElementById('user-name');
+    if (USER_ID) {
+        userNameElement.textContent = USER_ID.replace(/^id_/, "");
+    } else {
+        userNameElement.textContent = "测试用户";
+    }
+}
 
 let currentModel = R1_MODEL
 // 切换模型
@@ -159,35 +183,17 @@ function setupEventListeners() {
     //     });
     // });
      // 右上角的设置按钮
-     elements.settingButton.addEventListener('click', function () {
-        console.log('设置按钮被点击');
-        const sidebar = document.getElementById('theme-sidebar');
-        // console.log('sidebar', sidebar);
-        sidebar.classList.remove('hidden');
-        sidebar.classList.toggle('show'); // 切换弹框显示
-    });
-
-    // 关闭弹框
-    const closeButton = document.querySelector('.close-button');
-    closeButton.addEventListener('click', function () {
-        const sidebar = document.getElementById('theme-sidebar');
-        sidebar.classList.remove('show'); // 隐藏弹框
-    });
-
-    // // 切换到白天模式
-    // const dayModeButton = document.getElementById('day-mode');
-    // dayModeButton.addEventListener('click', function () {
-    //     document.body.classList.remove('night-mode'); // 移除夜晚模式
-    //     document.body.classList.add('day-mode'); // 添加白天模式
+    //  elements.settingButton.addEventListener('click', function () {
+    //     console.log('设置按钮被点击');
     //     const sidebar = document.getElementById('theme-sidebar');
-    //     sidebar.classList.remove('show'); // 隐藏弹框
+    //     // console.log('sidebar', sidebar);
+    //     sidebar.classList.remove('hidden');
+    //     sidebar.classList.toggle('show'); // 切换弹框显示
     // });
 
-    // // 切换到夜晚模式
-    // const nightModeButton = document.getElementById('night-mode');
-    // nightModeButton.addEventListener('click', function () {
-    //     document.body.classList.remove('day-mode'); // 移除白天模式
-    //     document.body.classList.add('night-mode'); // 添加夜晚模式
+    // 关闭弹框
+    // const closeButton = document.querySelector('.close-button');
+    // closeButton.addEventListener('click', function () {
     //     const sidebar = document.getElementById('theme-sidebar');
     //     sidebar.classList.remove('show'); // 隐藏弹框
     // });
@@ -249,6 +255,5 @@ function setupEventListeners() {
 
     // 初始化模式按钮
     initModeButtons();
-
 }
 

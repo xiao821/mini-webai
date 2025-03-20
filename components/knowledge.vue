@@ -208,8 +208,8 @@ module.exports =  {
         return {
             // API 配置
             apiConfig: {
-                baseUrl: 'http://172.16.99.32:1034',
-                // baseUrl: 'https://lgdev.baicc.cc/',
+                // baseUrl: 'http://172.16.99.32:1034',
+                baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: 'http://172.16.99.32:1032',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },

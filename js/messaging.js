@@ -175,6 +175,9 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
     // 显示加载指示器
     appendTypingIndicator();
+    let fullContent = "";
+    let messageElement = null;
+    let contentElement = null;
 
     try {
         // 处理消息历史，只保留content和role字段
@@ -203,10 +206,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
 
             // 为AI回复创建ID
             const aiMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            let messageElement = null;
-            let contentElement = null;
 
-            let fullContent = "";
             let accumulatedContent = "";
             let think_status = 0;
             let firstCharacterRendered = false;

@@ -221,6 +221,7 @@ module.exports = {
     return {
         apiConfig: {
                 baseUrl: 'https://lgdev.baicc.cc/',
+                // baseUrl: '/nlprag/',
                 // baseUrl: 'http://172.16.99.32:1034',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },

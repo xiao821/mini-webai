@@ -469,8 +469,9 @@
 
 <script type="module">
 // const baseUrl = 'http://172.16.99.32:1032/api/docs#/Feedback/feed_back_endpoint_api_feedback_post';
-// const baseUrl = 'http://172.16.99.32:1034';
-const baseUrl = 'https://lgdev.baicc.cc/';
+// const baseUrl = 'http://172.16.99.32:1030';
+// const baseUrl = 'https://lgdev.baicc.cc/';
+const baseUrl = '/nlprag/';
 // const baseUrl = 'http://172.16.99.32:1034';
 const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
 
@@ -2458,36 +2459,36 @@ module.exports = {
         this.getFeedbackTableData();
         this.getFeedbackTypes(); // 获取反馈类型列表
         // 移除这里的fetchDepartments调用，只在需要时（打开知识库弹窗时）才调用
-        this.fetchDepartments();
+        // this.fetchDepartments();
         
-        使用CDN加载markdown-it
-        if (window.markdownit) {
-            this.md = window.markdownit({
-                html: true,
-                linkify: true,
-                typographer: true,
-                breaks: true
-            });
-        } 
-        else {
-            // 如果markdownit不存在，动态加载脚本
-            const script = document.createElement('script');
-            script.src = './external_js/markdown-it.js';
-            script.onload = () => {
-                this.md = window.markdownit({
-                    html: true,
-                    linkify: true,
-                    typographer: true,
-                    breaks: true
-                });
+        // 使用CDN加载markdown-it
+        // if (window.markdownit) {
+        //     this.md = window.markdownit({
+        //         html: true,
+        //         linkify: true,
+        //         typographer: true,
+        //         breaks: true
+        //     });
+        // } 
+        // else {
+        //     // 如果markdownit不存在，动态加载脚本
+        //     const script = document.createElement('script');
+        //     script.src = '../external_js/markdown-it.js';
+        //     script.onload = () => {
+        //         this.md = window.markdownit({
+        //             html: true,
+        //             linkify: true,
+        //             typographer: true,
+        //             breaks: true
+        //         });
                 
-                // 如果当前有打开的详情，重新渲染
-                if (this.currentFeedback && this.currentFeedback.ai_answer) {
-                    this.renderedAIAnswer = this.md.render(this.currentFeedback.ai_answer);
-                }
-            };
-            document.head.appendChild(script);
-        }
+        //         // 如果当前有打开的详情，重新渲染
+        //         if (this.currentFeedback && this.currentFeedback.ai_answer) {
+        //             this.renderedAIAnswer = this.md.render(this.currentFeedback.ai_answer);
+        //         }
+        //     };
+        //     document.head.appendChild(script);
+        // }
     }
 }
 </script>

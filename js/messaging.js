@@ -180,12 +180,13 @@ export async function sendMessage(message, currentConversationId, currentMode, i
     let contentElement = null;
 
     try {
-        // 处理消息历史，只保留content和role字段，并过滤掉欢迎消息
+        // 处理消息历史，只保留content和role字段
         const simplifiedMessages = currentConversation.messages
-            .filter(msg => msg.id !== 'first-message') // 过滤掉欢迎消息
             .map(msg => ({
                 content: msg.content,
-                role: msg.role
+                role: msg.role,
+                // 保留knowledge_data字段，如果存在的话
+                ...(msg.knowledge_data ? { knowledge_data: msg.knowledge_data } : {})
             }));
 
         // 处理 assistant 的 content

@@ -140,7 +140,7 @@ export async function switchConversation(id) {
                 const updatedMessages = simplifiedMessages.map(msg => {
                     if (msg.role === 'assistant') {
                         // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
-                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                        msg.content = msg.content.replace(/```思考过程/g, '<details><summary>思考过程</summary><div class="thinking-process">').replace(/```/g, '</div></details>');
                     }
                     return msg;
                 });
@@ -193,12 +193,22 @@ export async function switchConversation(id) {
 
         if (messagesHistory.length === 0) {
             // 没有历史消息，发送欢迎信息
+            // console.log('No history messages, sending welcome message');
+            // 获取欢迎消息 currentMode未定义
             const currentMode = getCurrentMode();
             const selectedMode = modeConfig[currentMode] || modeConfig['default'];
             const welcomeMessage = selectedMode.welcomeMessage;
             
-            // 显示欢迎消息，但不添加到会话历史中
+            // 显示欢迎消息
             appendMessage('assistant', welcomeMessage, 'first-message');
+            // console.log('Welcome message appended:', welcomeMessage);
+            
+            // 添加欢迎消息到当前会话的消息数组
+            currentConversation.messages.push({
+                role: 'assistant',
+                content: welcomeMessage,
+                id: 'first-message'
+            });
         } else {
             // 如果有历史消息，则显示并添加到当前会话的消息数组
             // 定义一次性渲染的消息数量
@@ -209,8 +219,13 @@ export async function switchConversation(id) {
                 
                 // 处理 <a> 标签
                 let processedContent = msg.content;
+                // if (processedContent.includes("思考过程")) {
+                //     processedContent = processedContent.replace(/```思考过程/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
+                //     processedContent = processedContent.replace(/```/g, '</div></details>');
+                // }
                 if (processedContent === "" || processedContent.includes("<think>")) {
                     processedContent = processedContent.replace(/<think>/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
+                    // fullContent += "<details open class='thinking-process-details'><summary>思考过程</summary><div class='thinking-process'>";
                 } else if (processedContent.includes("</think>")) {
                     processedContent = processedContent.replace(/<\/think>/g, '</div></details>');
                 }
@@ -388,12 +403,16 @@ export async function startNewConversation(currentMode) {
     // 创建欢迎消息ID
     const welcomeMessageId = 'first-message';
 
-    // 创建新对话，不包含欢迎消息
+    // 创建新对话
     conversations.unshift({
         id: newId,
         title: '新对话',
         mode: currentMode,
-        messages: [] // 初始化为空数组，不包含欢迎消息
+        messages: [{
+            role: 'assistant',
+            content: welcomeMessage,
+            id: welcomeMessageId
+        }]
     });
 
     currentConversationId = newId;
@@ -402,6 +421,7 @@ export async function startNewConversation(currentMode) {
 
     // 显示欢迎消息
     appendMessage('assistant', welcomeMessage, welcomeMessageId);
+    // console.log('Welcome message appended:', welcomeMessage);
 
     // 重置 newmessages 数组
     newmessages = [];

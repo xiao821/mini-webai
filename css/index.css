@@ -1,1 +1,807 @@
-body {    font-family: 'Inter', system-ui, sans-serif;    transition: background-color 0.3s, color 0.3s; /* 添加过渡效果 */}.conversation-item {    transition: all 0.2s ease;}.conversation-item:hover {    background-color: rgba(59, 130, 246, 0.1);}.message-container img {    max-width: 100%;    border-radius: 0.375rem;}.message-container pre {    background-color: #f3f4f6;    border-radius: 0.375rem;    padding: 1rem;    overflow-x: auto;    margin: 1rem 0;}.message-container code {    font-family: monospace;    background-color: #f3f4f6;    padding: 0.1rem 0.3rem;    border-radius: 0.25rem;    font-size: 0.875rem;}.message-container pre code {    background-color: transparent;    padding: 0;}.typing-indicator span {    animation: blink 1.4s infinite both;}.typing-indicator span:nth-child(2) {    animation-delay: 0.2s;}.typing-indicator span:nth-child(3) {    animation-delay: 0.4s;}@keyframes blink {    0% { opacity: 0.1; }    20% { opacity: 1; }    100% { opacity: 0.1; }}.scrollbar-hide::-webkit-scrollbar {    display: none;}.scrollbar-hide {    -ms-overflow-style: none;    scrollbar-width: none;}.mode-button.bg-blue-100.text-blue-700,.mode-button.text-gray-700.hover\:bg-gray-100,.header-button.text-gray-500.hover\:text-gray-700.p-2.rounded-full.hover\:bg-gray-100,.send-button.ml-2.bg-blue-600.text-white.p-3.rounded-lg.flex.items-center.justify-center.hover\:bg-blue-700.disabled\:opacity-50.disabled\:cursor-not-allowed.h-14.w-14,.feedback-modal-content.bg-white.rounded-lg.max-w-md.w-full.p-6,.feedback-radio.h-4.w-4.text-blue-600.focus\:ring-blue-500.border-gray-300.rounded,.feedback-textarea.shadow-sm.focus\:ring-blue-500.focus\:border-blue-500.block.w-full.sm\:text-sm.border-gray-300.rounded-md,.feedback-cancel-button.px-4.py-2.border.border-gray-300.rounded-md.shadow-sm.text-sm.font-medium.text-gray-700.bg-white.hover\:bg-gray-50.focus\:outline-none.focus\:ring-2.focus\:ring-offset-2.focus\:ring-blue-500,.feedback-submit-button.px-4.py-2.border.border-transparent.rounded-md.shadow-sm.text-sm.font-medium.text-white.bg-blue-600.hover\:bg-blue-700.focus\:outline-none.focus\:ring-2.focus\:ring-offset-2.focus\:ring-blue-500 {    color: #374151; /* text-gray-700 */}.mode-button:hover,.header-button:hover {    background-color: #f3f4f6; /* hover:bg-gray-100 */}.toggle-label {    background-color: #d1d5db;    position: relative;    transition: background-color 0.3s;}.toggle-dot {    position: absolute;    top: 50%;    transform: translateY(-50%);    transition: transform 0.3s;}.toggle-checkbox:checked + .toggle-label .toggle-dot {    transform: translate(132%, -50%);}.toggle-checkbox:checked + .toggle-label {    background-color: #3b82f6;}.markdown-content h1 {    font-size: 1.5rem;    font-weight: 700;    margin-top: 1.5rem;    margin-bottom: 1rem;}.markdown-content h2 {    font-size: 1.25rem;    font-weight: 600;    margin-top: 1.25rem;    margin-bottom: 0.75rem;}.markdown-content ul {    list-style-type: disc;    list-style-position: inside;    margin-left: 1.5rem;    margin: 0.5rem 0;}.markdown-content ol {    list-style-type: decimal;    list-style-position: inside;    margin-left: 1.5rem;    margin: 0.5rem 0;}.markdown-content blockquote {    border-left-width: 4px;    border-left-color: #D1D5DB;    padding-left: 1rem;    font-style: italic;    margin: 1rem 0;}.markdown-content code {    font-family: monospace;    font-size: 0.875rem;    background-color: #F3F4F6;    padding: 0.25rem;    border-radius: 0.25rem;}.markdown-content pre {    background-color: #F3F4F6;    padding: 1rem;    border-radius: 0.25rem;    overflow-x: auto;    margin: 1rem 0;    white-space: pre-wrap;}.record-button {    transition: background-color 0.3s, transform 0.2s;    height: 56px;    width: 56px;}.record-button.recording {    background-color: red; /* 录音时的背景色 */    transform: scale(1.1); /* 录音时的放大效果 */}#chat-form {    display: flex; /* 使用 Flexbox 布局 */    align-items: center; /* 垂直居中对齐 */}textarea {    flex: 1; /* 使输入框占据剩余空间 */    margin-right: 8px; /* 添加右边距以分隔按钮 */}.record-button, .send-button {    margin-left: 8px; /* 添加左边距以分隔按钮 */}.record-button {    transition: background-color 0.3s, transform 0.2s;}.record-button.recording {    background-color: red; /* 录音时的背景色 */    transform: scale(1.1); /* 录音时的放大效果 */}.sidebar {    position: fixed;    top: 0;    right: -30%; /* 初始位置在屏幕外 */    width: 30%;    height: 100%;    background-color: white;    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);    transition: right 0.3s ease; /* 添加过渡效果 */    z-index: 1000;}.sidebar-content {    padding: 20px;}.sidebar.show {    right: 0; /* 显示时位置 */}.close-button {    cursor: pointer;    float: right;    font-size: 20px;}.day-mode {    background-color: white;    color: black;}.night-mode {    background-color: black;    color: white;}/* 添加到你的CSS文件中 */.thinking-block {    border: 1px solid #e0e0e0;    border-radius: 4px;    margin: 10px 0;    overflow: hidden;    transition: all 0.3s ease;}.thinking-header {    background-color: #f5f5f5;    padding: 8px 12px;    cursor: pointer;    font-weight: bold;    user-select: none;    display: flex;    justify-content: space-between;}.thinking-content {    padding: 10px;    background-color: #f9f9f9;    overflow: auto;    transition: max-height 0.3s ease;}.thinking-block.expanded .thinking-content {    display: block;    max-height: 1000px; /* 足够展示内容的高度 */}.thinking-block.collapsed .thinking-content {    display: none;    max-height: 0;}.toggle-icon {    font-family: monospace;    font-weight: bold;}/* 当鼠标悬停在思考块标题上时的样式 */.thinking-header:hover {    background-color: #e9e9e9;}/* 单选框样式 */.form-radio {    -webkit-appearance: none;    -moz-appearance: none;    appearance: none;    display: inline-block;    vertical-align: middle;    background-origin: border-box;    user-select: none;    flex-shrink: 0;    height: 1rem;    width: 1rem;    color: #3b82f6;    background-color: #fff;    border-color: #d1d5db;    border-width: 1px;    border-radius: 100%;}.form-radio:checked {    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='4'/%3e%3c/svg%3e");    border-color: transparent;    background-color: currentColor;    background-size: 100% 100%;    background-position: center;    background-repeat: no-repeat;}.form-radio:focus {    outline: none;    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);    border-color: #3b82f6;}#model-r1:checked {    color: #3b82f6; /* 蓝色 */}#model-qw:checked {    color: #10b981; /* 绿色 */}/* 知识分类树样式 */.category-item {    padding: 8px 12px;    border-radius: 6px;    cursor: pointer;    transition: all 0.2s ease;    margin-bottom: 4px;    font-size: 14px;}.category-item:hover {    background-color: rgba(59, 130, 246, 0.1);}.category-item.active {    background-color: rgba(59, 130, 246, 0.2);    color: #2563eb;    font-weight: 500;}.subcategory-container {    margin-left: 16px;    border-left: 1px dashed #e5e7eb;    padding-left: 8px;    margin-top: 4px;    margin-bottom: 8px;}.subcategory-item {    padding: 6px 12px;    border-radius: 4px;    cursor: pointer;    transition: all 0.2s ease;    margin-bottom: 2px;    font-size: 13px;}.subcategory-item:hover {    background-color: rgba(59, 130, 246, 0.1);}.subcategory-item.active {    background-color: rgba(59, 130, 246, 0.2);    color: #2563eb;    font-weight: 500;}.category-toggle {    display: inline-block;    width: 16px;    height: 16px;    text-align: center;    line-height: 16px;    margin-right: 6px;    font-size: 10px;    border-radius: 3px;    background-color: #f3f4f6;    transition: transform 0.2s;    color: #4b5563;}.category-toggle.expanded {    transform: rotate(90deg);    color: #2563eb;}.category-item.active .category-toggle {    background-color: rgba(59, 130, 246, 0.2);    color: #2563eb;}.category-item.active > div > span:not(.category-toggle) {    font-weight: 600;    color: #2563eb;}/* 消息容器样式 */.message-container {    position: relative;    word-break: break-word;}/* 代码块样式 */pre {    background-color: #f8f9fa;    border-radius: 6px;    padding: 16px;    overflow-x: auto;    margin: 10px 0;    border: 1px solid #e9ecef;}code {    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;    font-size: 0.9em;}/* 表格样式 */table {    border-collapse: collapse;    width: 100%;    margin: 16px 0;}th, td {    border: 1px solid #e9ecef;    padding: 8px 12px;    text-align: left;}th {    background-color: #f8f9fa;    font-weight: 600;}/* 引用样式 */blockquote {    border-left: 4px solid #e9ecef;    padding-left: 16px;    margin: 16px 0;    color: #6c757d;}/* 链接样式 */a {    color: #3b82f6;    text-decoration: none;}a:hover {    text-decoration: underline;}/* 列表样式 */ul, ol {    padding-left: 24px;    margin: 16px 0;}li {    margin-bottom: 4px;}/* 标题样式 */h1, h2, h3, h4, h5, h6 {    margin-top: 24px;    margin-bottom: 16px;    font-weight: 600;    line-height: 1.25;}h1 {    font-size: 2em;}h2 {    font-size: 1.5em;}h3 {    font-size: 1.25em;}/* 分隔线样式 */hr {    height: 1px;    background-color: #e9ecef;    border: none;    margin: 24px 0;}/* 图片样式 */img {    max-width: 100%;    height: auto;    border-radius: 6px;    margin: 16px 0;}/* 反馈按钮样式 */.feedback-btn {    transition: all 0.2s ease;}.feedback-btn:hover {    transform: scale(1.1);}/* 侧边栏样式 */.sidebar {    position: fixed;    top: 0;    right: 0;    width: 300px;    height: 100%;    background-color: white;    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);    z-index: 1000;    transition: transform 0.3s ease;    transform: translateX(100%);}.sidebar:not(.hidden) {    transform: translateX(0);}.sidebar-content {    padding: 20px;    height: 100%;    overflow-y: auto;}.close-button {    position: absolute;    top: 10px;    right: 10px;    font-size: 24px;    cursor: pointer;    color: #666;}/* 头部按钮样式 */.header-button {    padding: 8px;    border-radius: 6px;    transition: background-color 0.2s;}.header-button:hover {    background-color: #f3f4f6;}/* 模式按钮样式 */.mode-button {    transition: all 0.2s ease;}.mode-button:hover {    background-color: #f3f4f6;}/* 知识分类项样式 */.category-item {    padding: 8px 12px;    border-radius: 6px;    cursor: pointer;    transition: all 0.2s ease;}.category-item:hover {    background-color: #f3f4f6;}.category-item.active {    background-color: #ebf5ff;    color: #3b82f6;    font-weight: 500;}/* 面包屑导航样式 */.breadcrumb-container {    display: flex;    align-items: center;}#selected-category-breadcrumb {    display: flex;    align-items: center;}#clear-category {    display: flex;    align-items: center;    justify-content: center;    transition: all 0.2s ease;}#clear-category:hover {    background-color: #f3f4f6;    border-radius: 50%;}/* 反馈表单样式 */.feedback-radio {    width: 16px;    height: 16px;    border-radius: 50%;    border: 2px solid #d1d5db;    appearance: none;    -webkit-appearance: none;    outline: none;    cursor: pointer;    position: relative;}.feedback-radio:checked {    border-color: #3b82f6;    background-color: #3b82f6;}.feedback-radio:checked::after {    content: '';    position: absolute;    top: 50%;    left: 50%;    transform: translate(-50%, -50%);    width: 6px;    height: 6px;    border-radius: 50%;    background-color: white;}.feedback-textarea {    border-radius: 6px;    border: 1px solid #d1d5db;    resize: none;}.feedback-textarea:focus {    outline: none;    border-color: #3b82f6;    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);}.feedback-cancel-button, .feedback-submit-button {    transition: all 0.2s ease;}.feedback-cancel-button:hover {    background-color: #f3f4f6;}.feedback-submit-button:hover {    background-color: #2563eb;}/* 知识分类相关样式 */.category-toggle {    display: inline-block;    transition: transform 0.2s;    margin-right: 8px;    font-size: 10px;    color: #666;    width: 12px;    text-align: center;}.category-toggle.expanded {    transform: rotate(90deg);}.category-item {    margin-bottom: 8px;    font-size: 14px;    cursor: pointer;    user-select: none;}.subcategory-container {    /* margin-left: 20px; */    margin-top: 4px;}.subcategory-item {    padding: 4px 8px;    margin-bottom: 4px;    border-radius: 4px;    cursor: pointer;    transition: background-color 0.2s;    font-size: 13px;}.subcategory-item:hover {    background-color: #f3f4f6;}.subcategory-item.active {    background-color: #e6f7ff;    color: #1890ff;    font-weight: 500;}/* 面包屑导航样式 */#selected-category-breadcrumb {    display: flex;    align-items: center;}#clear-category,#clear-category-top {    cursor: pointer;}/* 当没有选择分类时隐藏叉号按钮 */#clear-category[style*="display: none"],#clear-category-top[style*="display: none"] {    visibility: hidden;}
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+    /* 添加过渡效果 */
+}
+
+.conversation-item {
+    transition: all 0.2s ease;
+}
+
+.conversation-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.message-container img {
+    max-width: 100%;
+    border-radius: 0.375rem;
+}
+
+.message-container pre {
+    background-color: #f3f4f6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.message-container code {
+    font-family: monospace;
+    background-color: #f3f4f6;
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.message-container pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.typing-indicator span {
+    animation: blink 1.4s infinite both;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0.1;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.1;
+    }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.mode-button.bg-blue-100.text-blue-700,
+.mode-button.text-gray-700.hover\:bg-gray-100,
+.header-button.text-gray-500.hover\:text-gray-700.p-2.rounded-full.hover\:bg-gray-100,
+.send-button.ml-2.bg-blue-600.text-white.p-3.rounded-lg.flex.items-center.justify-center.hover\:bg-blue-700.disabled\:opacity-50.disabled\:cursor-not-allowed.h-14.w-14,
+.feedback-modal-content.bg-white.rounded-lg.max-w-md.w-full.p-6,
+.feedback-radio.h-4.w-4.text-blue-600.focus\:ring-blue-500.border-gray-300.rounded,
+.feedback-textarea.shadow-sm.focus\:ring-blue-500.focus\:border-blue-500.block.w-full.sm\:text-sm.border-gray-300.rounded-md,
+.feedback-cancel-button.px-4.py-2.border.border-gray-300.rounded-md.shadow-sm.text-sm.font-medium.text-gray-700.bg-white.hover\:bg-gray-50.focus\:outline-none.focus\:ring-2.focus\:ring-offset-2.focus\:ring-blue-500,
+.feedback-submit-button.px-4.py-2.border.border-transparent.rounded-md.shadow-sm.text-sm.font-medium.text-white.bg-blue-600.hover\:bg-blue-700.focus\:outline-none.focus\:ring-2.focus\:ring-offset-2.focus\:ring-blue-500 {
+    color: #374151;
+    /* text-gray-700 */
+}
+
+.mode-button:hover,
+.header-button:hover {
+    background-color: #f3f4f6;
+    /* hover:bg-gray-100 */
+}
+
+.toggle-label {
+    background-color: #d1d5db;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.toggle-dot {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s;
+}
+
+.toggle-checkbox:checked+.toggle-label .toggle-dot {
+    transform: translate(132%, -50%);
+}
+
+.toggle-checkbox:checked+.toggle-label {
+    background-color: #3b82f6;
+}
+
+.markdown-content h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.markdown-content h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content ul {
+    list-style-type: disc;
+    list-style-position: inside;
+    margin-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.markdown-content ol {
+    list-style-type: decimal;
+    list-style-position: inside;
+    margin-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.markdown-content blockquote {
+    border-left-width: 4px;
+    border-left-color: #D1D5DB;
+    padding-left: 1rem;
+    font-style: italic;
+    margin: 1rem 0;
+}
+
+.markdown-content code {
+    font-family: monospace;
+    font-size: 0.875rem;
+    background-color: #F3F4F6;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+}
+
+.markdown-content pre {
+    background-color: #F3F4F6;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    white-space: pre-wrap;
+}
+
+.record-button {
+    transition: background-color 0.3s, transform 0.2s;
+    height: 56px;
+    width: 56px;
+}
+
+.record-button.recording {
+    background-color: red;
+    /* 录音时的背景色 */
+    transform: scale(1.1);
+    /* 录音时的放大效果 */
+}
+
+#chat-form {
+    display: flex;
+    /* 使用 Flexbox 布局 */
+    align-items: center;
+    /* 垂直居中对齐 */
+}
+
+textarea {
+    flex: 1;
+    /* 使输入框占据剩余空间 */
+    margin-right: 8px;
+    /* 添加右边距以分隔按钮 */
+}
+
+.record-button,
+.send-button {
+    margin-left: 8px;
+    /* 添加左边距以分隔按钮 */
+}
+
+.record-button {
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.record-button.recording {
+    background-color: red;
+    /* 录音时的背景色 */
+    transform: scale(1.1);
+    /* 录音时的放大效果 */
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -30%;
+    /* 初始位置在屏幕外 */
+    width: 30%;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+    transition: right 0.3s ease;
+    /* 添加过渡效果 */
+    z-index: 1000;
+}
+
+.sidebar-content {
+    padding: 20px;
+}
+
+.sidebar.show {
+    right: 0;
+    /* 显示时位置 */
+}
+
+.close-button {
+    cursor: pointer;
+    float: right;
+    font-size: 20px;
+}
+
+.day-mode {
+    background-color: white;
+    color: black;
+}
+
+.night-mode {
+    background-color: black;
+    color: white;
+}
+
+/* 添加到你的CSS文件中 */
+.thinking-block {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.thinking-header {
+    background-color: #f5f5f5;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+.thinking-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+    overflow: auto;
+    transition: max-height 0.3s ease;
+}
+
+.thinking-block.expanded .thinking-content {
+    display: block;
+    max-height: 1000px;
+    /* 足够展示内容的高度 */
+}
+
+.thinking-block.collapsed .thinking-content {
+    display: none;
+    max-height: 0;
+}
+
+.toggle-icon {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+/* 当鼠标悬停在思考块标题上时的样式 */
+.thinking-header:hover {
+    background-color: #e9e9e9;
+}
+
+/* 单选框样式 */
+.form-radio {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    display: inline-block;
+    vertical-align: middle;
+    background-origin: border-box;
+    user-select: none;
+    flex-shrink: 0;
+    height: 1rem;
+    width: 1rem;
+    color: #3b82f6;
+    background-color: #fff;
+    border-color: #d1d5db;
+    border-width: 1px;
+    border-radius: 100%;
+}
+
+.form-radio:checked {
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='4'/%3e%3c/svg%3e");
+    border-color: transparent;
+    background-color: currentColor;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.form-radio:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    border-color: #3b82f6;
+}
+
+#model-r1:checked {
+    color: #3b82f6;
+    /* 蓝色 */
+}
+
+#model-qw:checked {
+    color: #10b981;
+    /* 绿色 */
+}
+
+/* 知识分类树样式 */
+.category-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.category-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.category-item.active {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.subcategory-container {
+    margin-left: 16px;
+    border-left: 1px dashed #e5e7eb;
+    padding-left: 8px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.subcategory-item {
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+    font-size: 13px;
+}
+
+.subcategory-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.subcategory-item.active {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.category-toggle {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    line-height: 16px;
+    margin-right: 6px;
+    font-size: 10px;
+    border-radius: 3px;
+    background-color: #f3f4f6;
+    transition: transform 0.2s;
+    color: #4b5563;
+}
+
+.category-toggle.expanded {
+    transform: rotate(90deg);
+    color: #2563eb;
+}
+
+.category-item.active .category-toggle {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+}
+
+.category-item.active>div>span:not(.category-toggle) {
+    font-weight: 600;
+    color: #2563eb;
+}
+
+/* 消息容器样式 */
+.message-container {
+    position: relative;
+    word-break: break-word;
+}
+
+/* 代码块样式 */
+pre {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 10px 0;
+    border: 1px solid #e9ecef;
+}
+
+code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+}
+
+/* 表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+th,
+td {
+    border: 1px solid #e9ecef;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 引用样式 */
+blockquote {
+    border-left: 4px solid #e9ecef;
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #6c757d;
+}
+
+/* 链接样式 */
+a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 列表样式 */
+ul,
+ol {
+    padding-left: 24px;
+    margin: 16px 0;
+}
+
+li {
+    margin-bottom: 4px;
+}
+
+/* 标题样式 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+h1 {
+    font-size: 2em;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.25em;
+}
+
+/* 分隔线样式 */
+hr {
+    height: 1px;
+    background-color: #e9ecef;
+    border: none;
+    margin: 24px 0;
+}
+
+/* 图片样式 */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 16px 0;
+}
+
+/* 反馈按钮样式 */
+.feedback-btn {
+    transition: all 0.2s ease;
+}
+
+.feedback-btn:hover {
+    transform: scale(1.1);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    transform: translateX(100%);
+}
+
+.sidebar:not(.hidden) {
+    transform: translateX(0);
+}
+
+.sidebar-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+/* 头部按钮样式 */
+.header-button {
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.header-button:hover {
+    background-color: #f3f4f6;
+}
+
+/* 模式按钮样式 */
+.mode-button {
+    transition: all 0.2s ease;
+}
+
+.mode-button:hover {
+    background-color: #f3f4f6;
+}
+
+/* 知识分类项样式 */
+.category-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    background-color: #f3f4f6;
+}
+
+.category-item.active {
+    background-color: #ebf5ff;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+/* 面包屑导航样式 */
+.breadcrumb-container {
+    display: flex;
+    align-items: center;
+}
+
+#selected-category-breadcrumb {
+    display: flex;
+    align-items: center;
+}
+
+#clear-category {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#clear-category:hover {
+    background-color: #f3f4f6;
+    border-radius: 50%;
+}
+
+/* 反馈表单样式 */
+.feedback-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.feedback-radio:checked {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+}
+
+.feedback-radio:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.feedback-textarea {
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    resize: none;
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.feedback-cancel-button,
+.feedback-submit-button {
+    transition: all 0.2s ease;
+}
+
+.feedback-cancel-button:hover {
+    background-color: #f3f4f6;
+}
+
+.feedback-submit-button:hover {
+    background-color: #2563eb;
+}
+
+/* 知识分类相关样式 */
+.category-toggle {
+    display: inline-block;
+    transition: transform 0.2s;
+    margin-right: 8px;
+    font-size: 10px;
+    color: #666;
+    width: 12px;
+    text-align: center;
+}
+
+.category-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.category-item {
+    margin-bottom: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.subcategory-container {
+    /* margin-left: 20px; */
+    margin-top: 4px;
+}
+
+.subcategory-item {
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 13px;
+}
+
+.subcategory-item:hover {
+    background-color: #f3f4f6;
+}
+
+.subcategory-item.active {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    font-weight: 500;
+}
+
+/* 面包屑导航样式 */
+#selected-category-breadcrumb {
+    display: flex;
+    align-items: center;
+}
+
+#clear-category,
+#clear-category-top {
+    cursor: pointer;
+}
+
+/* 当没有选择分类时隐藏叉号按钮 */
+#clear-category[style*="display: none"],
+#clear-category-top[style*="display: none"] {
+    visibility: hidden;
+}
+
+
+/* 思考过程样式 */
+.thinking-process-details {
+    margin: 10px 0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.thinking-process-details:not([open]) summary {
+    background-color: #e6f3ff;
+    border-radius: 8px;
+    position: relative;
+}
+
+.thinking-process-details:not([open]) summary::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #1890ff;
+    border-radius: 8px 0 0 8px;
+}
+
+.thinking-process-details summary {
+    padding: 12px 16px;
+    font-weight: bold;
+    color: #4a5568;
+    cursor: pointer;
+    user-select: none;
+    background-color: #f1f3f5;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s ease;
+}
+
+.thinking-process-details summary:hover {
+    background-color: #e9ecef;
+}
+
+.thinking-process {
+    padding: 16px;
+    color: #2d3748;
+    line-height: 1.8;
+    background-color: #f0f0f0;
+    border-radius: 0 0 8px 8px;
+}
+
+.thinking-process-details[open] summary {
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+}
+
+/* 确保悬浮框内容不会溢出 */
+.el-tooltip__popper .popper__arrow {
+    border-width: 6px !important;
+}

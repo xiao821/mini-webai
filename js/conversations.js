@@ -140,7 +140,7 @@ export async function switchConversation(id) {
                 const updatedMessages = simplifiedMessages.map(msg => {
                     if (msg.role === 'assistant') {
                         // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
-                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                        msg.content = msg.content.replace(/```思考过程/g, '<details><summary>思考过程</summary><div class="thinking-process">').replace(/```/g, '</div></details>');
                     }
                     return msg;
                 });
@@ -219,11 +219,15 @@ export async function switchConversation(id) {
                 
                 // 处理 <a> 标签
                 let processedContent = msg.content;
-                if (processedContent.includes("<think>")) {
-                    processedContent = processedContent.replace(/<think>/g, "```思考过程");
-                }
-                if (processedContent.includes("</think>")) {
-                    processedContent = processedContent.replace(/<\/think>/g, "```");
+                // if (processedContent.includes("思考过程")) {
+                //     processedContent = processedContent.replace(/```思考过程/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
+                //     processedContent = processedContent.replace(/```/g, '</div></details>');
+                // }
+                if (processedContent === "" || processedContent.includes("<think>")) {
+                    processedContent = processedContent.replace(/<think>/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
+                    // fullContent += "<details open class='thinking-process-details'><summary>思考过程</summary><div class='thinking-process'>";
+                } else if (processedContent.includes("</think>")) {
+                    processedContent = processedContent.replace(/<\/think>/g, '</div></details>');
                 }
 
                 // 判断是否需要延迟加载

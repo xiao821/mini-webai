@@ -283,11 +283,11 @@ export async function sendMessage(message, currentConversationId, currentMode, i
                                         const content = delta.content;
 
                                         if (content === "" || content.includes("<think>")) {
-                                            fullContent += "```思考过程";
+                                            fullContent += "<details open class='thinking-process-details'><summary>思考过程</summary><div class='thinking-process'>";
                                             think_status = 1;
                                             continue;
                                         } else if (content.includes("</think>")) {
-                                            fullContent += "```\n";
+                                            fullContent += "</div></details>";
                                             think_status = 2;
                                             continue;
                                         }
@@ -371,6 +371,16 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             // 更新会话
             updateConversation(currentConversation);
             console.log('currentConversation', currentConversation);
+
+            // 在消息完成后，自动折叠所有思考过程
+            if (messageElement) {
+                setTimeout(() => {
+                    const details = messageElement.querySelectorAll('details.thinking-process-details');
+                    details.forEach(detail => {
+                        detail.removeAttribute('open');
+                    });
+                }, 100); // 延迟1秒后折叠，确保内容已完全渲染
+            }
 
             return true;
         } else {

@@ -180,11 +180,14 @@ export async function sendMessage(message, currentConversationId, currentMode, i
     let contentElement = null;
 
     try {
-        // 处理消息历史，只保留content和role字段
-        const simplifiedMessages = currentConversation.messages.map(msg => ({
-            content: msg.content,
-            role: msg.role
-        }));
+        // 处理消息历史，只保留content和role字段，并过滤掉欢迎消息
+        const simplifiedMessages = currentConversation.messages
+            .filter(msg => msg.id !== 'first-message') // 过滤掉欢迎消息
+            .map(msg => ({
+                content: msg.content,
+                role: msg.role
+            }));
+
         // 处理 assistant 的 content
         const updatedMessages = simplifiedMessages.map(msg => {
             if (msg.role === 'assistant') {
@@ -193,6 +196,7 @@ export async function sendMessage(message, currentConversationId, currentMode, i
             }
             return msg;
         });
+
         // 调用API获取响应
         const response = await sendChatCompletion(
             currentConversationId,

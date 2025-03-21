@@ -831,6 +831,94 @@ module.exports = {
             this.originalKnowledgeNodes = [];
             this.originalKnowledgeNodesBackup = [];
 
+            // 加载原始引用的知识点数据
+            if (row.kb_reference && Array.isArray(row.kb_reference) && row.kb_reference.length > 0) {
+                if (row.department === '市医保中心') {
+                    // 提取所有的 kb_id
+                    const kgids = row.kb_reference.map(item => item.kb_id);
+                    
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchKnowledgeContent(kgids);
+                    
+                    // 将获取到的内容与原始数据合并
+                    this.originalKnowledgeNodes = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
+                        return {
+                            kb_id: ref.kb_id,
+                            similarity: ref.similarity,
+                            kb_title: content ? content.title : '',
+                            kb_content: content ? content.content : '',
+                            kb_simil: ref.similarity
+                        };
+                    });
+                } else if (row.department === '市监知识库') {
+                    // 龙岗政数局处理逻辑
+                    const kbIds = row.kb_reference.map(item => item.kb_id);
+                    
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchLonggangKnowledgeContent(kbIds);
+                    
+                    // 将获取到的内容与原始数据合并
+                    this.originalKnowledgeNodes = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
+                        return {
+                            kb_id: ref.kb_id,
+                            similarity: ref.similarity,
+                            kb_title: content ? content.title : '',
+                            kb_content: content ? content.content : '',
+                            kb_simil: ref.similarity
+                        };
+                    });
+                } else if (row.department === '政务中心业务') {
+                    // 政务中心处理逻辑
+                    const kbIds = row.kb_reference.map(item => item.kb_id);
+                    
+                    // 获取知识点内容
+                    const knowledgeContent = await this.fetchZwzxKnowledgeContent(kbIds);
+                    
+                    // 将获取到的内容与原始数据合并
+                    this.originalKnowledgeNodes = row.kb_reference.map((ref, index) => {
+                        const content = knowledgeContent[index];
+                        
+                        // 先检查content对象是否存在
+                        if (!content) {
+                            console.warn(`未找到KB ID ${ref.kb_id}的知识点内容`);
+                            return {
+                                kb_id: ref.kb_id,
+                                similarity: ref.similarity,
+                                kb_title: '未找到该知识点',
+                                kb_content: '知识点内容获取失败',
+                                kb_simil: ref.similarity
+                            };
+                        }
+                        
+                        // 检查title和content字段
+                        const title = content.title || content.kb_title || '未知标题';
+                        const contentText = content.content || content.kb_content || '未知内容';
+                        
+                        return {
+                            kb_id: ref.kb_id,
+                            similarity: ref.similarity,
+                            kb_title: title,
+                            kb_content: contentText,
+                            kb_simil: ref.similarity
+                        };
+                    });
+                } else {
+                    // 其他部门或未知部门的处理逻辑
+                    this.originalKnowledgeNodes = row.kb_reference.map(ref => ({
+                        kb_id: ref.kb_id,
+                        similarity: ref.similarity,
+                        kb_title: ref.kb_title || '未知标题',
+                        kb_content: ref.kb_content || '未知内容',
+                        kb_simil: ref.similarity
+                    }));
+                }
+                
+                // 备份原始知识点，用于重置
+                this.originalKnowledgeNodesBackup = JSON.parse(JSON.stringify(this.originalKnowledgeNodes));
+            }
+
             // 打开知识库弹窗
             this.knowledgeDialogVisible = true;
         },

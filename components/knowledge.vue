@@ -125,8 +125,8 @@
                                         type="text" 
                                         size="mini" 
                                         @click.stop="showItemGraph(item, $event)"
-                                        :disabled="!decompositionJson"
-                                        :class="{'disabled-button': !decompositionJson}">
+                                        :disabled="!item.decompositionJson && !decompositionJson"
+                                        :class="{'disabled-button': !item.decompositionJson && !decompositionJson}">
                                         <i class="el-icon-share"></i> 知识图谱
                                     </el-button>
                                 </div>
@@ -209,9 +209,9 @@ module.exports =  {
             // API 配置
             apiConfig: {
                 // baseUrl: 'http://172.16.99.32:1030',
-                baseUrl: 'https://lgdev.baicc.cc/',
+                // baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: '/nlprag/',
-                // baseUrl: 'http://172.16.99.32:1032',
+                baseUrl: 'http://172.16.99.32:1036',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
             // 新增的部门选项
@@ -254,6 +254,9 @@ module.exports =  {
             graphLoadingMessage: '正在生成知识图谱...',
             // 添加go对象引用
             go: null,
+            // 初始化原始引用的知识点
+            originalKnowledgeNodes: [],
+            originalKnowledgeNodesBackup: [],
         }
     },
     created() {
@@ -301,7 +304,7 @@ module.exports =  {
             this.decompositionDialogVisible = false;
             this.decompositionResult = '';
             this.isLoading = false;
-            // 不要清除decompositionJson，因为需要用于显示知识图谱
+            // 不清除decompositionJson，以便保存后可以使用
         },
         
         // 知识分解按钮点击事件
@@ -329,84 +332,120 @@ module.exports =  {
                 return;
             }
             
-            this.isLoading = true; // 显示加载状态
-            this.loadingMessage = '正在生成知识分解...';
-            try { 
-                // 构建请求数据
-                const requestData = {
-                    department: this.selectedDepartment,
-                    content: item.content
+            this.decompositionResult = ''; // 清空之前的结果
+            this.decompositionJson = null; // 清空之前的JSON
+            let jsonContent = ''; // 用于累积JSON内容
+            let isCollectingJson = false; // 标记是否正在收集JSON内容
+            
+            try {
+                // 构建请求参数
+                const params = {
+                    model: "qwen2.5-72b",
+                    content: item.content,
+                    max_token: "10240",
+                    temperature: "0.6",
+                    stream: true
                 };
                 
-                // 调用知识分解API
-                const apiUrl = `${this.apiConfig.baseUrl}/api/knowledge_graph?department=${encodeURIComponent(this.selectedDepartment)}&content=${encodeURIComponent(item.content)}`;
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
+                // 创建 EventSource 连接
+                const response = await fetch(`${this.apiConfig.baseUrl}/v1/knowledge/graph`, {
+                    method: 'POST',
                     headers: {
                         'Authorization': this.apiConfig.token,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify(params)
                 });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`生成知识分解失败: ${response.status} ${errorText}`);
-                }
-                
-                const data = await response.json();
-                
-                // 处理返回的数据格式
-                if (data && data.results && data.results.length > 0) {
-                    const result = data.results[0];
-                    
-                    // 提取并显示markdown内容
-                    if (result.knol_md) {
-                        this.decompositionResult = result.knol_md;
-                        this.isLoading = false; // 关闭加载状态
-                    } else {
-                        this.decompositionResult = '未找到分解结果的Markdown内容';
+
+                // 创建可读流并处理数据
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        console.log('流读取完成');
+                        break;
                     }
                     
-                    // 处理知识图谱数据
-                    if (result.knol_data) {
-                        try {
-                            // 尝试解析knol_data字符串为JSON对象
-                            const knolDataObj = JSON.parse(result.knol_data);
-                            this.decompositionJson = knolDataObj;
-                            
-                            // 将分解结果保存到当前知识项
-                            if (this.currentKnowledgeItem) {
-                                this.currentKnowledgeItem.decompositionJson = knolDataObj;
+                    // 解码数据
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        
+                        if (line.startsWith('data: ')) {
+                            const jsonData = line.slice(6); // 移除 'data: ' 前缀
+                            try {
+                                if (jsonData.trim() === '[DONE]') {
+                                    // 流结束
+                                    continue;
+                                }
+                                
+                                const data = JSON.parse(jsonData);
+                                
+                                // 从choices数组中获取content
+                                if (data.choices && data.choices[0] && data.choices[0].delta) {
+                                    const content = data.choices[0].delta.content;
+                                    if (content) {
+                                        // 检查是否包含```json标记
+                                        if (content.includes('```json')) {
+                                            isCollectingJson = true;
+                                            jsonContent = ''; // 确保开始时是空的
+                                            console.log('开始收集JSON数据');
+                                            continue;
+                                        }
+                                        
+                                        // 检查是否是JSON结束标记 - 修改为更精确地检测结束标记
+                                        if (content.includes('```') && isCollectingJson && !content.includes('```json')) {
+                                            isCollectingJson = false;
+                                            // 解析收集到的JSON
+                                            try {
+                                                // 确保JSON内容不为空并且是有效的JSON格式
+                                                if (jsonContent && jsonContent.trim()) {
+                                                    console.log('收集到的JSON数据:', jsonContent);
+                                                    const knolDataObj = JSON.parse(jsonContent);
+                                                    this.decompositionJson = knolDataObj;
+                                                    console.log('成功解析JSON数据:', knolDataObj);
+                                                    
+                                                    // 将分解结果保存到当前知识项
+                                                    if (this.currentKnowledgeItem) {
+                                                        this.currentKnowledgeItem.decompositionJson = knolDataObj;
+                                                    }
+                                                } else {
+                                                    console.error('收集到的JSON数据为空');
+                                                    this.$message.error('JSON数据为空，请重试');
+                                                }
+                                            } catch (e) {
+                                                console.error('解析JSON数据失败:', e, '原始数据:', jsonContent);
+                                                this.$message.error('JSON数据解析失败，请重试');
+                                            }
+                                            continue;
+                                        }
+                                        
+                                        // 如果正在收集JSON，添加到jsonContent
+                                        if (isCollectingJson) {
+                                            jsonContent += content;
+                                        }
+                                        
+                                        // 实时追加内容到结果中
+                                        this.decompositionResult += content;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('解析SSE数据失败:', e);
                             }
-                            
-                            // 知识分解成功后提示用户可以查看知识图谱
-                            this.$message.success('知识分解成功，现在您可以查看知识图谱');
-                            
-                            // 触发分解生成后的事件
-                            this.onDecompositionGenerated(knolDataObj);
-                        } catch (e) {
-                            console.error('解析知识图谱数据失败:', e);
-                            this.decompositionJson = null;
-                            this.$message.error('知识图谱数据解析失败');
                         }
-                    } else {
-                        this.decompositionJson = null;
-                        this.$message.warning('未找到可用的知识图谱数据');
                     }
-                } else {
-                    throw new Error('API返回的数据格式不正确');
                 }
                 
             } catch (error) {
-                this.isLoading = false;
+                console.error('生成知识分解失败:', error);
                 this.$message.error('生成知识分解失败: ' + error.message);
+            } finally {
+                this.isLoading = false;
             }
-        },
-
-        // 知识分解生成后的处理
-        onDecompositionGenerated(decomposition) {
-            console.log('知识分解生成后的处理:', decomposition);
-            // 在这里可以添加处理逻辑，例如保存分解结果到数据库
         },
 
         // 保存分解结果
@@ -414,6 +453,38 @@ module.exports =  {
             if (!this.decompositionResult || !this.currentKnowledgeItem) {
                 this.$message.warning('没有可保存的分解结果');
                 return;
+            }
+            
+            // 如果decompositionJson为null，尝试从decompositionResult中提取JSON
+            if (!this.decompositionJson && this.decompositionResult) {
+                console.log('尝试从分解结果中提取JSON数据');
+                
+                // 使用正则表达式提取```json...```部分
+                const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+                const match = this.decompositionResult.match(jsonRegex);
+                
+                if (match && match[1]) {
+                    try {
+                        const extractedJson = match[1].trim();
+                        console.log('从结果中提取的JSON:', extractedJson);
+                        
+                        // 解析提取的JSON
+                        const jsonData = JSON.parse(extractedJson);
+                        this.decompositionJson = jsonData;
+                        console.log('成功从结果中解析JSON数据');
+                    } catch (e) {
+                        console.error('从结果中解析JSON失败:', e);
+                        this.$message.warning('解析JSON失败，将只保存文本结果');
+                    }
+                } else {
+                    console.warn('未在结果中找到JSON数据');
+                }
+            }
+            
+            console.log('保存分解结果:', this.decompositionJson);
+            // 确保当前知识项保存解析后的JSON数据
+            if (this.decompositionJson) {
+                this.currentKnowledgeItem.decompositionJson = this.decompositionJson;
             }
             
             // 这里可以添加保存到后端的逻辑
@@ -432,7 +503,9 @@ module.exports =  {
             this.currentKnowledgeItem = item;
             
             // 检查是否已经进行过知识分解
-            if (!this.decompositionJson) {
+            let graphData = item.decompositionJson || this.decompositionJson;
+            
+            if (!graphData) {
                 this.$message.warning('请先点击"知识分解"按钮，生成知识分解结果后再查看知识图谱');
                 return;
             }
@@ -441,7 +514,7 @@ module.exports =  {
             this.graphDialogVisible = true;
             
             // 生成知识图谱
-            this.generateKnowledgeGraph(this.currentKnowledgeItem, this.decompositionJson);
+            this.generateKnowledgeGraph(this.currentKnowledgeItem, graphData);
         },
 
         // 关闭图谱弹框
@@ -1081,12 +1154,8 @@ module.exports =  {
         
         // 查看知识点详情
         viewKnowledgeDetail(item) {
-            // 如果选择了不同的知识项，清除之前的分解数据
-            if (this.currentKnowledgeItem && this.currentKnowledgeItem.kgid !== item.kgid) {
-                this.decompositionJson = null;
-                this.decompositionResult = '';
-            }
-            
+            // 不重置decompositionJson和decompositionResult
+            // 这样即使切换知识项，也不会丢失已生成的数据
             this.editKnowledgeItem(item);
         },
 

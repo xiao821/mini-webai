@@ -1,6 +1,6 @@
 import { elements, initializeElements, adjustTextareaHeight, setWelcomeMessage, initializeLazyLoading } from './ui.js';
 import { sendMessage } from './messaging.js';
-import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie } from './conversations.js';
+import { initializeConversations, startNewConversation, switchConversation, getCurrentConversationId, setRandomIdInCookie, getRandomIdFromCookie } from './conversations.js';
 import { getCurrentMode, initModeButtons, renderModeButtons, setCurrentMode } from './modes.js';
 import { submitFeedback, closeFeedbackModal } from './feedback.js';
 import { modeConfig, QW_MODEL, R1_MODEL, USER_ID } from './config.js';
@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // 初始化DOM元素引用
     initializeElements(elements);
 
+    // 获取userid，存入cookie中（放在前面）
+    setRandomIdInCookie();
+    
     // 初始化应用
     initializeApp();
-
-    // 获取userid，存入cookie中
-    setRandomIdInCookie();
 
     // 设置登录时间
     setLoginTime();
@@ -58,8 +58,10 @@ function setLoginTime() {
 // 设置用户名
 function setUserName() {
     const userNameElement = document.getElementById('user-name');
-    if (USER_ID) {
-        userNameElement.textContent = USER_ID.replace(/^id_/, "");
+    // 直接从cookie获取最新的ID
+    const currentUserId = getRandomIdFromCookie();
+    if (currentUserId) {
+        userNameElement.textContent = currentUserId.replace(/^id_/, "");
     } else {
         userNameElement.textContent = "测试用户";
     }

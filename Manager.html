@@ -92,6 +92,16 @@
     </div>
 
     <script>
+        window.md = new markdownit({
+            html: true,        // 允许 HTML 标签
+            breaks: true,      // 转换段落里的 '\n' 到 <br>
+            linkify: true,     // 将类似 URL 的文本自动转换为链接
+            typographer: true, // 启用一些语言中立的替换 + 引号美化
+            highlight: function (str, lang) {
+                // 代码高亮功能，可以根据需要自定义
+                return str;
+            }
+        });
         // 路由配置
         const routes = [
             {

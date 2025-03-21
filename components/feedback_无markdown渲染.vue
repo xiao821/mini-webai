@@ -777,14 +777,14 @@ module.exports = {
             this.dialogVisible = true;
             
             // 使用markdown-it渲染AI回答中的markdown内容
-            if (row.ai_answer) {
+            if (row.ai_answer && this.md) {
                 try {
                     let processedAnswer = row.ai_answer;
                     // 替换思考过程标记为HTML标签(/```思考过程/g, '<think>').replace(/```/g, '</think>')
                     if (typeof processedAnswer === 'string') {
                         processedAnswer = processedAnswer.replace(/```思考过程/g, '<a class="thinking-process">').replace(/```/g, '</a>');
                     }
-                    this.renderedAIAnswer = window.md.render(processedAnswer);
+                    this.renderedAIAnswer = this.md.render(processedAnswer);
                 } catch (error) {
                     console.error('Markdown渲染失败:', error);
                     this.renderedAIAnswer = row.ai_answer;
@@ -812,13 +812,13 @@ module.exports = {
             };
 
             // 渲染AI回答
-            if (row.ai_answer && window.md) {
+            if (row.ai_answer && this.md) {
                 try {
                     let processedAnswer = row.ai_answer;
                     if (typeof processedAnswer === 'string') {
                         processedAnswer = processedAnswer.replace(/```思考过程/g, '<think class="thinking-process">').replace(/```/g, '</think>');
                     }
-                    this.renderedKnowledgeAIAnswer = this.renderMarkdown(processedAnswer);
+                    this.renderedKnowledgeAIAnswer = this.md.render(processedAnswer);
                 } catch (error) {
                     console.error('Markdown渲染失败:', error);
                     this.renderedKnowledgeAIAnswer = row.ai_answer;
@@ -1639,7 +1639,7 @@ module.exports = {
         // 渲染Markdown内容
         renderMarkdown(content) {
             if (!content) return '';
-            if (!window.md) return content;
+            if (!this.md) return content;
             
             try {
                 let processedContent = content;
@@ -1647,7 +1647,7 @@ module.exports = {
                 if (typeof processedContent === 'string') {
                     processedContent = processedContent.replace(/```思考过程/g, '<think class="thinking-process">').replace(/```/g, '</think>');
                 }
-                return window.md.render(processedContent);
+                return this.md.render(processedContent);
             } catch (error) {
                 console.error('Markdown渲染失败:', error);
                 return content;
@@ -1977,8 +1977,8 @@ module.exports = {
                                             accumulatedContent += content;
 
                                             // 立即更新UI显示
-                                            if (window.md) {
-                                                this.renderedGeneratedAnswer = window.md.render(fullContent);
+                                            if (this.md) {
+                                                this.renderedGeneratedAnswer = this.md.render(fullContent);
                                             } else {
                                                 this.renderedGeneratedAnswer = fullContent;
                                             }
@@ -2011,8 +2011,8 @@ module.exports = {
                         if (data.choices && data.choices.length > 0 && data.choices[0].delta && data.choices[0].delta.content) {
                             const content = data.choices[0].delta.content;
                             fullContent += content;
-                            if (window.md) {
-                                this.renderedGeneratedAnswer = window.md.render(fullContent);
+                            if (this.md) {
+                                this.renderedGeneratedAnswer = this.md.render(fullContent);
                             } else {
                                 this.renderedGeneratedAnswer = fullContent;
                             }
@@ -2465,6 +2465,37 @@ module.exports = {
     mounted() {
         this.getFeedbackTableData();
         this.getFeedbackTypes(); // 获取反馈类型列表
+        // 移除这里的fetchDepartments调用，只在需要时（打开知识库弹窗时）才调用
+        // this.fetchDepartments();
+        
+        // 使用CDN加载markdown-it
+        // if (window.markdownit) {
+        //     this.md = window.markdownit({
+        //         html: true,
+        //         linkify: true,
+        //         typographer: true,
+        //         breaks: true
+        //     });
+        // } 
+        // else {
+        //     // 如果markdownit不存在，动态加载脚本
+        //     const script = document.createElement('script');
+        //     script.src = '../external_js/markdown-it.js';
+        //     script.onload = () => {
+        //         this.md = window.markdownit({
+        //             html: true,
+        //             linkify: true,
+        //             typographer: true,
+        //             breaks: true
+        //         });
+                
+        //         // 如果当前有打开的详情，重新渲染
+        //         if (this.currentFeedback && this.currentFeedback.ai_answer) {
+        //             this.renderedAIAnswer = this.md.render(this.currentFeedback.ai_answer);
+        //         }
+        //     };
+        //     document.head.appendChild(script);
+        // }
     }
 }
 </script>

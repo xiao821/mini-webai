@@ -127,8 +127,8 @@ export async function sendChatCompletion(currentConversationId, messages, curren
                 body: JSON.stringify(requestData),
                 // 添加额外的fetch选项
                 keepalive: true,
-                timeout: 360000, // 30秒超时
-                signal: AbortSignal.timeout(360000) // 30秒后自动中断
+                timeout: 360000,
+                signal: AbortSignal.timeout(360000)
             });
 
             if (!response.ok) {

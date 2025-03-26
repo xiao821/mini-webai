@@ -203,9 +203,9 @@ module.exports =  {
             // API 配置
             apiConfig: {
                 // baseUrl: 'http://172.16.99.32:1030',
-                // baseUrl: 'https://lgdev.baicc.cc/',
+                baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: '/nlprag/',
-                baseUrl: 'http://172.16.99.32:1036',
+                // baseUrl: 'http://172.16.99.32:1036',
                 token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
             },
             // 新增的部门选项

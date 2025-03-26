@@ -11,12 +11,15 @@
             @change="handleFileChange"
             style="display: none"
           >
-          <button 
+          <el-button 
+            type="success"
             class="upload-btn"
             @click="triggerFileInput"
+            :disabled="uploadLoading"
           >
-            上传Excel文件
-          </button>
+            {{ uploadLoading ? '上传中...' : '上传Excel文件' }}
+          </el-button>
+          <el-button type="primary" @click="downloadTemplate" :disabled="uploadLoading">下载模板文件</el-button>
           <div class="upload-tip">
             请上传xlsx或xls格式的Excel文件
           </div>
@@ -26,44 +29,70 @@
         </div>
       </div>
   
-      <!-- 参数输入部分 -->
-      <div class="params-section" v-if="uploadSuccess">
-        <div class="el-form">
-          <div class="el-form-item">
-            <label class="el-form-item__label">批次大小:</label>
-            <div class="el-form-item__content">
-              <div class="el-input">
-                <input 
-                  class="el-input__inner"
-                  type="number"
-                  v-model="form.batch_size"
-                  placeholder="请输入批次大小"
-                >
-              </div>
-            </div>
+      <!-- 问题选择部分 -->
+      <div class="question-selection-section" v-if="questions.length > 0">
+        <h3>请选择要测试的问题列表</h3>
+        <div class="selection-controls">
+          <el-button size="small" type="primary" @click="selectAll" :disabled="uploadLoading">全选</el-button>
+          <el-button size="small" @click="deselectAll" :disabled="uploadLoading">取消全选</el-button>
+          <el-button size="small" type="warning" @click="triggerFileInput" :disabled="uploadLoading">
+            {{ uploadLoading ? '上传中...' : '重新上传' }}
+          </el-button>
+        </div>
+        <div class="el-table">
+          <div class="el-table__header-wrapper">
+            <table class="el-table__header">
+              <thead>
+                <tr>
+                  <th class="el-table__cell is-leaf" style="width: 50px;"><div class="cell">选择</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">用户ID</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">问题描述</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">模型名称</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">知识库</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">知识库类别</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">创建时间</div></th>
+                </tr>
+              </thead>
+            </table>
           </div>
-          <div class="el-form-item">
-            <label class="el-form-item__label">实验名称:</label>
-            <div class="el-form-item__content">
-              <div class="el-input">
-                <input
-                  class="el-input__inner"
-                  type="text" 
-                  v-model="form.exp_name"
-                  placeholder="请输入实验名称"
-                >
-              </div>
-            </div>
+          <div class="el-table__body-wrapper">
+            <table class="el-table__body">
+              <tbody>
+                <tr v-for="item in questions" :key="item.lq_id" class="el-table__row">
+                  <td class="el-table__cell" style="width: 50px;">
+                    <div class="cell">
+                      <input 
+                        type="checkbox" 
+                        :id="'question-' + item.lq_id" 
+                        v-model="item.selected"
+                      >
+                    </div>
+                  </td>
+                  <td class="el-table__cell"><div class="cell">{{ item.user_id }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.question }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.model_name }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.department }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.category || '暂无分类' }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ formatDate(item.created_at) }}</div></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="el-form-item" style="text-align: center;">
-            <div class="el-form-item__content">
-              <button 
-                class="el-button el-button--primary"
-                @click="handleSubmit"
-                :disabled="loading"
-              >
-                <span>{{ loading ? '提交中...' : '提交' }}</span>
-              </button>
+        </div>
+
+        <!-- 提交按钮部分 -->
+        <div class="params-section" v-if="questions.length > 0">
+          <div class="el-form">
+            <div class="el-form-item" style="text-align: center;">
+              <div class="el-form-item__content">
+                <button 
+                  class="el-button el-button--primary submit-btn"
+                  @click="handleSubmit"
+                  :disabled="loading || uploadLoading || getSelectedQuestions().length === 0"
+                >
+                  <span>{{ loading ? '提交中...' : '开始测试' }}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -89,7 +118,6 @@
                 <tr>
                   <th class="el-table__cell is-leaf"><div class="cell">ID</div></th>
                   <th class="el-table__cell is-leaf"><div class="cell">问题描述</div></th>
-                  <th class="el-table__cell is-leaf"><div class="cell">实验名称</div></th>
                   <th class="el-table__cell is-leaf"><div class="cell">AI回答</div></th>
                 </tr>
               </thead>
@@ -101,7 +129,6 @@
                 <tr v-for="item in tableData" :key="item.id" class="el-table__row">
                   <td class="el-table__cell"><div class="cell">{{ item.id }}</div></td>
                   <td class="el-table__cell"><div class="cell">{{ item.problemdescription }}</div></td>
-                  <td class="el-table__cell"><div class="cell">{{ item.exp_name }}</div></td>
                   <td class="el-table__cell"><div class="cell">{{ item.ai_answer_test || '暂无回答' }}</div></td>
                 </tr>
               </tbody>
@@ -113,7 +140,7 @@
   </template>
   
   <script>
-  const baseUrl = 'https://aiapi.szmckj.cn';
+  const baseUrl = 'https://lgdev.baicc.cc/';
   const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
   
   module.exports = {
@@ -122,17 +149,19 @@
         uploadSuccess: false,
         loading: false,
         dataLoading: false,
+        uploadLoading: false,
         tableData: [],
         selectedFile: null,
-        form: {
-          batch_size: '',
-          exp_name: ''
-        }
+        questions: []
       }
     },
     methods: {
       // 触发文件选择
       triggerFileInput() {
+        if (this.uploadLoading) {
+          alert('正在上传文件，请稍后再试');
+          return;
+        }
         this.$refs.fileInput.click();
       },
   
@@ -153,15 +182,19 @@
   
         this.selectedFile = file;
         this.uploadFile(file);
+        
+        // 清空文件输入框，确保可以重复上传相同文件
+        event.target.value = '';
       },
   
       // 上传文件
       async uploadFile(file) {
+        this.uploadLoading = true;
         const formData = new FormData();
         formData.append('file', file);
   
         try {
-          const response = await fetch(`${baseUrl}/api/read_and_insert_excel`, {
+          const response = await fetch(`${baseUrl}/api/upload_test_questions`, {
             method: 'POST',
             headers: {
               'Authorization': API_AUTH_TOKEN
@@ -174,46 +207,119 @@
           }
   
           const result = await response.json();
-          this.uploadSuccess = true;
           alert('文件上传成功');
+          
+          // 获取上传成功后的问题列表
+          await this.fetchQuestions();
         } catch (error) {
           alert('文件上传失败: ' + error.message);
+        } finally {
+          this.uploadLoading = false;
         }
+      },
+      
+      // 获取问题列表
+      async fetchQuestions() {
+        try {
+          const response = await fetch(`${baseUrl}/api/test_questions`, {
+            method: 'GET',
+            headers: {
+              'Authorization': API_AUTH_TOKEN
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('获取问题列表失败');
+          }
+          
+          const result = await response.json();
+          // 添加 selected 属性到每个问题中
+          this.questions = result.data.map(item => ({
+            ...item,
+            selected: false
+          }));
+        } catch (error) {
+          alert('获取问题列表失败: ' + error.message);
+        }
+      },
+      
+      // 全选
+      selectAll() {
+        this.questions.forEach(item => {
+          item.selected = true;
+        });
+      },
+      
+      // 取消全选
+      deselectAll() {
+        this.questions.forEach(item => {
+          item.selected = false;
+        });
+      },
+      
+      // 获取选中的问题
+      getSelectedQuestions() {
+        return this.questions.filter(item => item.selected);
       },
   
       // 提交表单
       async handleSubmit() {
-        if (!this.form.batch_size || !this.form.exp_name) {
-          alert('请填写完整信息');
+        const selectedQuestions = this.getSelectedQuestions();
+        if (selectedQuestions.length === 0) {
+          alert('请至少选择一个问题');
           return;
         }
   
         this.loading = true;
         try {
-          // 调用第二个接口
-          const response1 = await fetch(`${baseUrl}/api/tsg_test`, {
+          // 调用接口进行测试
+          const response = await fetch(`${baseUrl}/api/tsg_test`, {
             method: 'POST',
             headers: {
               'Authorization': API_AUTH_TOKEN,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              batch_size: this.form.batch_size,
-              exp_name: this.form.exp_name
+              questions: selectedQuestions.map(q => ({
+                lq_id: q.lq_id,
+                user_id: q.user_id,
+                question: q.question,
+                model_name: q.model_name,
+                department: q.department,
+                category: q.category
+              }))
             })
           });
   
-          if (!response1.ok) {
+          if (!response.ok) {
             throw new Error('提交失败');
           }
   
-          // 调用第三个接口获取数据
+          // 调用接口获取数据
           await this.fetchData();
         } catch (error) {
           alert('操作失败：' + error.message);
         } finally {
           this.loading = false;
         }
+      },
+
+      // 下载模板文件
+      async downloadTemplate() {
+        const response = await fetch(`${baseUrl}/api/test_questions/template`, {
+          headers: {
+            'Authorization': API_AUTH_TOKEN
+          }
+        });
+        if (!response.ok) {
+          throw new Error('下载模板文件失败');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '问题测试模板.xlsx';
+        a.click();
       },
 
       // 手动获取数据
@@ -238,6 +344,12 @@
         } finally {
           this.dataLoading = false;
         }
+      },
+
+      formatDate(dateStr) {
+        if (!dateStr) return '无';
+        const date = new Date(dateStr);
+        return date.toLocaleString();
       }
     }
   }
@@ -284,6 +396,15 @@
     margin-top: 10px;
     color: #409EFF;
     font-size: 14px;
+  }
+  
+  /* 问题选择部分样式 */
+  .question-selection-section {
+    margin: 20px 0;
+  }
+  
+  .selection-controls {
+    margin: 10px 0;
   }
   
   /* Element 表单样式 */
@@ -382,6 +503,12 @@
     cursor: not-allowed;
     opacity: 0.7;
   }
+  
+  .el-button--small {
+    padding: 9px 15px;
+    font-size: 12px;
+    border-radius: 3px;
+  }
 
   .refresh-section {
     margin: 20px 0;
@@ -400,6 +527,7 @@
     border-radius: 4px;
     font-size: 14px;
     color: #606266;
+    margin-bottom: 20px;
   }
   
   .el-table__header-wrapper, .el-table__body-wrapper {
@@ -441,5 +569,10 @@
     word-break: break-all;
     line-height: 23px;
     padding: 0 10px;
+  }
+
+  .submit-btn {
+    padding: 15px 30px;
+    font-size: 16px;
   }
   </style>

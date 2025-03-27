@@ -42,7 +42,7 @@ export function getRandomIdFromCookie() {
             return cookie[1];
         }
     }
-    console.log('没有随机ID',cookie[1]);
+    // console.log('没有随机ID',cookie[1]);
     return null; // 如果没有随机 ID，返回 null
 }
 

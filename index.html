@@ -536,8 +536,9 @@
               username === CORRECT_USERNAME &&
               password === CORRECT_PASSWORD
             ) {
+                // const USER_ID = getRandomIdFromCookie();
               // 此处可以将登录状态存入 sessionStorage，防止刷新后再登录
-            //   sessionStorage.setItem("isAuthenticated", "true");id_b13zux7f
+              localStorage.setItem("isAuthenticated", "true");
                 // 设置过期时间为 2099 年 12 月 31 日 23:59:59 GMT
               loginContainer.style.display = "none"; // 登录成功后隐藏登录层
             } else {
@@ -555,7 +556,8 @@
               username === CORRECT_USERNAME &&
               password === CORRECT_PASSWORD
             ) {
-              sessionStorage.setItem("isAuthenticated", "true");
+                // const USER_ID = getRandomIdFromCookie();
+              localStorage.setItem("isAuthenticated", "true");
               loginContainer.style.display = "none";
             } else {
               Swal.fire({
@@ -569,7 +571,7 @@
 
       // 页面加载时检查是否已登录
       window.addEventListener("DOMContentLoaded", function () {
-        if (sessionStorage.getItem("isAuthenticated") === "true") {
+        if (localStorage.getItem("isAuthenticated") === "true") {
           loginContainer.style.display = "none";
         } else {
           loginContainer.style.display = "flex";

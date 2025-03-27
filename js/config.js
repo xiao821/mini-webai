@@ -8,7 +8,8 @@ import { fetchDepartmentCategory } from './api.js'
 export const API_BASE_URL = 'https://lgdev.baicc.cc/';
 // export const API_BASE_URL = '/nlprag/';
 export const BASE_URL_VOICE = 'http://172.16.99.32:1034';
-export const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
+export const API_AUTH_TOKEN = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
+// export const API_AUTH_TOKEN_PROD = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
 export const USER_ID = getRandomIdFromCookie();
 // export const USER_ID = 'medical_insurance_user';
 export const R1_MODEL = 'deepseek-32b-r1'

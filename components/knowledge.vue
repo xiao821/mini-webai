@@ -206,7 +206,7 @@ module.exports =  {
                 baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: '/nlprag/',
                 // baseUrl: 'http://172.16.99.32:1036',
-                token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
+                token: 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai'
             },
             // 新增的部门选项
             departmentOptions: [],

@@ -90,23 +90,12 @@
                   @click="handleSubmit"
                   :disabled="loading || uploadLoading || getSelectedQuestions().length === 0"
                 >
-                  <span>{{ loading ? '提交中...' : '开始测试' }}</span>
+                  <span>{{ loading ? '提交中...' : '提交任务' }}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 手动获取数据按钮 -->
-      <div class="refresh-section" v-if="tableData.length > 0">
-        <button 
-          class="el-button el-button--success"
-          @click="fetchData"
-          :disabled="dataLoading"
-        >
-          <span>{{ dataLoading ? '获取中...' : '刷新数据' }}</span>
-        </button>
       </div>
   
       <!-- 数据展示部分 -->
@@ -116,9 +105,16 @@
             <table class="el-table__header">
               <thead>
                 <tr>
-                  <th class="el-table__cell is-leaf"><div class="cell">ID</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">任务ID</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">问题ID</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">用户ID</div></th>
                   <th class="el-table__cell is-leaf"><div class="cell">问题描述</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">模型名称</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">知识库</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">类别</div></th>
                   <th class="el-table__cell is-leaf"><div class="cell">AI回答</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">创建时间</div></th>
+                  <th class="el-table__cell is-leaf"><div class="cell">操作</div></th>
                 </tr>
               </thead>
             </table>
@@ -126,22 +122,73 @@
           <div class="el-table__body-wrapper">
             <table class="el-table__body">
               <tbody>
-                <tr v-for="item in tableData" :key="item.id" class="el-table__row">
-                  <td class="el-table__cell"><div class="cell">{{ item.id }}</div></td>
-                  <td class="el-table__cell"><div class="cell">{{ item.problemdescription }}</div></td>
-                  <td class="el-table__cell"><div class="cell">{{ item.ai_answer_test || '暂无回答' }}</div></td>
+                <tr v-for="item in tableData" :key="item.lta_id" class="el-table__row">
+                  <td class="el-table__cell"><div class="cell">{{ item.task_id }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.lq_id }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.user_id }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.question }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.model_name }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.department }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ item.category || '暂无分类' }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ truncateText(item.answer, 30) || '暂无回答' }}</div></td>
+                  <td class="el-table__cell"><div class="cell">{{ formatDate(item.created_at) }}</div></td>
+                  <td class="el-table__cell">
+                    <div class="cell">
+                      <el-button type="primary" size="small" @click="showDetail(item)">详情</el-button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      <!-- 详情对话框 -->
+      <el-dialog
+        title="详细信息"
+        :visible.sync="dialogVisible"
+        width="70%"
+        :before-close="handleClose"
+        custom-class="detail-dialog"
+      >
+        <div class="detail-content">
+          <div class="detail-item">
+            <label>问题描述：</label>
+            <div class="detail-text">{{ currentDetail.question }}</div>
+          </div>
+          <div class="detail-item">
+            <label>AI回答：</label>
+            <div class="detail-text">{{ currentDetail.answer || '暂无回答' }}</div>
+          </div>
+          <div class="detail-item">
+            <label>模型名称：</label>
+            <div class="detail-text">{{ currentDetail.model_name }}</div>
+          </div>
+          <div class="detail-item">
+            <label>知识库：</label>
+            <div class="detail-text">{{ currentDetail.department }}</div>
+          </div>
+          <div class="detail-item">
+            <label>类别：</label>
+            <div class="detail-text">{{ currentDetail.category || '暂无分类' }}</div>
+          </div>
+          <div class="detail-item">
+            <label>创建时间：</label>
+            <div class="detail-text">{{ formatDate(currentDetail.created_at) }}</div>
+          </div>
+        </div>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="dialogVisible = false">关闭</el-button>
+        </div>
+      </el-dialog>
     </div>
   </template>
   
   <script>
-  const baseUrl = 'https://lgdev.baicc.cc/';
-  const API_AUTH_TOKEN = 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv';
+  // const baseUrl = 'https://lgdev.baicc.cc/';
+  const baseUrl = 'http://172.16.99.32:1035';
+  const API_AUTH_TOKEN = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
   
   module.exports = {
     data() {
@@ -152,7 +199,9 @@
         uploadLoading: false,
         tableData: [],
         selectedFile: null,
-        questions: []
+        questions: [],
+        dialogVisible: false,
+        currentDetail: {}
       }
     },
     methods: {
@@ -234,10 +283,18 @@
           
           const result = await response.json();
           // 添加 selected 属性到每个问题中
-          this.questions = result.data.map(item => ({
+          const allQuestions = result.data.map(item => ({
             ...item,
             selected: false
           }));
+          
+          // 按创建时间倒序排序
+          allQuestions.sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
+          
+          // 只取前10条数据
+          this.questions = allQuestions.slice(0, 10);
         } catch (error) {
           alert('获取问题列表失败: ' + error.message);
         }
@@ -257,6 +314,14 @@
         });
       },
       
+      // 获取cookie值
+      getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      },
+
       // 获取选中的问题
       getSelectedQuestions() {
         return this.questions.filter(item => item.selected);
@@ -272,31 +337,49 @@
   
         this.loading = true;
         try {
-          // 调用接口进行测试
-          const response = await fetch(`${baseUrl}/api/tsg_test`, {
+          // 从cookie获取user_id
+          const userId = this.getCookie('miniai_TSG_Id');
+          if (!userId) {
+            throw new Error('未找到用户ID，请确保已登录');
+          }
+
+          // 获取选中问题的lq_id列表
+          const questionIds = selectedQuestions.map(q => q.lq_id);
+
+          // 创建测试任务
+          const createTaskResponse = await fetch(`${baseUrl}/api/test_tasks`, {
             method: 'POST',
             headers: {
               'Authorization': API_AUTH_TOKEN,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              questions: selectedQuestions.map(q => ({
-                lq_id: q.lq_id,
-                user_id: q.user_id,
-                question: q.question,
-                model_name: q.model_name,
-                department: q.department,
-                category: q.category
-              }))
+              user_id: userId,
+              question_ids: questionIds
             })
           });
-  
-          if (!response.ok) {
-            throw new Error('提交失败');
+
+          if (!createTaskResponse.ok) {
+            throw new Error('创建任务失败');
           }
-  
-          // 调用接口获取数据
-          await this.fetchData();
+
+          const taskResult = await createTaskResponse.json();
+          const taskId = taskResult.task_id; // 假设返回的数据中包含task_id字段
+
+          // 执行测试任务
+          const executeResponse = await fetch(`${baseUrl}/api/test_tasks/${taskId}/execute`, {
+            method: 'POST',
+            headers: {
+              'Authorization': API_AUTH_TOKEN
+            }
+          });
+
+          if (!executeResponse.ok) {
+            throw new Error('执行任务失败');
+          }
+
+          alert('任务已提交执行');
+          this.fetchData(taskId);
         } catch (error) {
           alert('操作失败：' + error.message);
         } finally {
@@ -323,10 +406,10 @@
       },
 
       // 手动获取数据
-      async fetchData() {
+      async fetchData(task_id) {
         this.dataLoading = true;
         try {
-          const response = await fetch(`${baseUrl}/api/ai_answer`, {
+          const response = await fetch(`${baseUrl}/api/test_tasks/${task_id}/answers`, {
             headers: {
               'Authorization': API_AUTH_TOKEN
             }
@@ -336,9 +419,13 @@
             throw new Error('获取数据失败');
           }
   
-          const data = await response.json();
-          this.tableData = data;
-          alert('数据获取成功');
+          const result = await response.json();
+          if (result && result.data) {
+            this.tableData = result.data;
+            alert('数据获取成功');
+          } else {
+            throw new Error('数据格式不正确');
+          }
         } catch (error) {
           alert('获取数据失败：' + error.message);
         } finally {
@@ -350,6 +437,20 @@
         if (!dateStr) return '无';
         const date = new Date(dateStr);
         return date.toLocaleString();
+      },
+
+      truncateText(text, length = 30) {
+        if (!text) return '';
+        return text.length > length ? text.substring(0, length) + '...' : text;
+      },
+
+      showDetail(item) {
+        this.currentDetail = { ...item };
+        this.dialogVisible = true;
+      },
+
+      handleClose(done) {
+        done();
       }
     }
   }
@@ -357,12 +458,12 @@
   
   <style scoped>
   .batch-text-container {
-    padding: 20px;
+    padding: 0 20px;
     font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
   }
   
   .upload-section {
-    margin: 20px 0;
+    margin: 5px 0;
   }
   
   .upload-box {
@@ -574,5 +675,40 @@
   .submit-btn {
     padding: 15px 30px;
     font-size: 16px;
+  }
+
+  .detail-dialog {
+    margin-top: 15vh !important;
+  }
+
+  .detail-content {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .detail-item {
+    margin-bottom: 20px;
+  }
+
+  .detail-item label {
+    font-weight: bold;
+    color: #606266;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .detail-text {
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+  }
+
+  .dialog-footer {
+    text-align: right;
   }
   </style>

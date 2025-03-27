@@ -139,8 +139,23 @@ export async function switchConversation(id) {
                 // 处理 assistant 的 content
                 const updatedMessages = simplifiedMessages.map(msg => {
                     if (msg.role === 'assistant') {
-                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
-                        msg.content = msg.content.replace(/```思考过程/g, '<details><summary>思考过程</summary><div class="thinking-process">').replace(/```/g, '</div></details>');
+                        // 检查内容是否已经包含HTML标签
+                        let processedContent = msg.content;
+                        
+                        // 如果已经包含<details>标签，转换为<think>标签
+                        if (processedContent.includes('<details class="thinking-process-details">')) {
+                            processedContent = processedContent.replace(/<details class="thinking-process-details"><summary>思考过程<\/summary><div class="thinking-process">/g, '<think>');
+                            processedContent = processedContent.replace(/<\/div><\/details>/g, '</think>');
+                        } 
+                        // 否则检查是否包含```思考过程标签
+                        else if (processedContent.includes('```思考过程')) {
+                            processedContent = processedContent.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                        }
+                        
+                        return {
+                            ...msg,
+                            content: processedContent
+                        };
                     }
                     return msg;
                 });
@@ -217,17 +232,21 @@ export async function switchConversation(id) {
             messagesHistory.forEach((msg, index) => {
                 const messageId = msg.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
                 
-                // 处理 <a> 标签
+                // 处理消息内容中的标签
                 let processedContent = msg.content;
-                // if (processedContent.includes("思考过程")) {
-                //     processedContent = processedContent.replace(/```思考过程/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
-                //     processedContent = processedContent.replace(/```/g, '</div></details>');
-                // }
-                if (processedContent === "" || processedContent.includes("<think>")) {
-                    processedContent = processedContent.replace(/<think>/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
-                    // fullContent += "<details open class='thinking-process-details'><summary>思考过程</summary><div class='thinking-process'>";
-                } else if (processedContent.includes("</think>")) {
-                    processedContent = processedContent.replace(/<\/think>/g, '</div></details>');
+                
+                // 检查是否已经包含details标签，避免重复处理
+                if (processedContent.includes('<details class="thinking-process-details">')) {
+                    // 内容已经包含HTML格式，不需要再处理
+                    console.log('内容已经包含HTML格式，跳过标签替换');
+                } else {
+                    // 只有当标签存在且尚未处理时才处理<think>标签
+                    if (processedContent.includes("<think>")) {
+                        processedContent = processedContent.replace(/<think>/g, '<details class="thinking-process-details"><summary>思考过程</summary><div class="thinking-process">');
+                    }
+                    if (processedContent.includes("</think>")) {
+                        processedContent = processedContent.replace(/<\/think>/g, '</div></details>');
+                    }
                 }
 
                 // 判断是否需要延迟加载
@@ -511,8 +530,23 @@ export async function saveCurrentConversation() {
         // 处理 assistant 的 content
         const updatedMessages = simplifiedMessages.map(msg => {
             if (msg.role === 'assistant') {
-                // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
-                msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                // 检查内容是否已经包含HTML标签
+                let processedContent = msg.content;
+                
+                // 如果已经包含<details>标签，转换为<think>标签
+                if (processedContent.includes('<details class="thinking-process-details">')) {
+                    processedContent = processedContent.replace(/<details class="thinking-process-details"><summary>思考过程<\/summary><div class="thinking-process">/g, '<think>');
+                    processedContent = processedContent.replace(/<\/div><\/details>/g, '</think>');
+                } 
+                // 否则检查是否包含```思考过程标签
+                else if (processedContent.includes('```思考过程')) {
+                    processedContent = processedContent.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                }
+                
+                return {
+                    ...msg,
+                    content: processedContent
+                };
             }
             return msg;
         });
@@ -554,8 +588,23 @@ window.addEventListener('beforeunload', (event) => {
                 // 处理 assistant 的 content
                 const updatedMessages = simplifiedMessages.map(msg => {
                     if (msg.role === 'assistant') {
-                        // 替换第一个 ``` 为 <think>，第二个 ``` 为 </think>
-                        msg.content = msg.content.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                        // 检查内容是否已经包含HTML标签
+                        let processedContent = msg.content;
+                        
+                        // 如果已经包含<details>标签，转换为<think>标签
+                        if (processedContent.includes('<details class="thinking-process-details">')) {
+                            processedContent = processedContent.replace(/<details class="thinking-process-details"><summary>思考过程<\/summary><div class="thinking-process">/g, '<think>');
+                            processedContent = processedContent.replace(/<\/div><\/details>/g, '</think>');
+                        } 
+                        // 否则检查是否包含```思考过程标签
+                        else if (processedContent.includes('```思考过程')) {
+                            processedContent = processedContent.replace(/```思考过程/g, '<think>').replace(/```/g, '</think>');
+                        }
+                        
+                        return {
+                            ...msg,
+                            content: processedContent
+                        };
                     }
                     return msg;
                 });

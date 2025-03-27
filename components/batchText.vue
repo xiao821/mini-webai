@@ -29,6 +29,56 @@
         </div>
       </div>
   
+      <!-- 进度展示部分 -->
+      <div class="progress-section" v-if="currentStep > 0">
+        <div class="progress-container">
+          <div class="progress-header">
+            <div class="progress-title">当前进度</div>
+            <div v-if="hasError" class="progress-status error">
+              <i class="progress-error-icon">!</i> {{ errorMessage }}
+            </div>
+            <div v-else-if="currentStep < 4" class="progress-status">
+              {{ progressSteps[currentStep - 1] }}中...
+            </div>
+            <div v-else class="progress-status success">
+              <i class="progress-success-icon">✓</i> 全部完成
+            </div>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-steps">
+              <div 
+                v-for="(step, index) in progressSteps" 
+                :key="index"
+                class="progress-step"
+                :class="{ 
+                  'active': currentStep >= index + 1, 
+                  'current': currentStep === index + 1,
+                  'error': hasError && currentStep === index + 1
+                }"
+              >
+                <div class="step-icon">
+                  <i class="step-icon-inner">{{ index + 1 }}</i>
+                  <i v-if="currentStep > index + 1" class="step-icon-check">✓</i>
+                  <i v-if="hasError && currentStep === index + 1" class="step-icon-error">!</i>
+                </div>
+                <div class="step-label">{{ step }}</div>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div 
+                class="progress-bar-inner" 
+                :class="{ 'error-bar': hasError }"
+                :style="{ width: progressPercentage + '%' }"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-actions" v-if="currentStep === 4 || hasError">
+            <el-button type="text" size="small" @click="resetProgress">重新开始</el-button>
+            <el-button v-if="hasError" type="primary" size="small" @click="retryCurrentStep">重试</el-button>
+          </div>
+        </div>
+      </div>
+  
       <!-- 问题选择部分 -->
       <div class="question-selection-section" v-if="questions.length > 0">
         <h3>请选择要测试的问题列表</h3>
@@ -186,9 +236,11 @@
   </template>
   
   <script>
-  // const baseUrl = 'https://lgdev.baicc.cc/';
-  const baseUrl = 'http://172.16.99.32:1035';
-  const API_AUTH_TOKEN = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
+  // const baseUrl = '/nlprag/';
+  const baseUrl = 'https://lgdev.baicc.cc';
+  // const baseUrl = 'http://172.16.99.32:1035';
+  const API_AUTH_TOKEN = 'Bearer power3-browbeat-footsie-abridge-gaming-mckj';
+  // const API_AUTH_TOKEN = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
   
   module.exports = {
     data() {
@@ -201,7 +253,19 @@
         selectedFile: null,
         questions: [],
         dialogVisible: false,
-        currentDetail: {}
+        currentDetail: {},
+        // 进度状态管理
+        currentStep: 0, // 0: 未开始, 1: 上传文件, 2: 选择问题, 3: 提交任务, 4: 执行完成
+        progressSteps: ['上传文件', '选择问题', '提交任务', '获取数据'],
+        hasError: false,
+        errorMessage: ''
+      }
+    },
+    computed: {
+      // 计算进度条百分比
+      progressPercentage() {
+        if (this.currentStep === 0) return 0;
+        return (this.currentStep / this.progressSteps.length) * 100;
       }
     },
     methods: {
@@ -230,6 +294,7 @@
         }
   
         this.selectedFile = file;
+        this.currentStep = 1; // 更新进度状态：上传文件
         this.uploadFile(file);
         
         // 清空文件输入框，确保可以重复上传相同文件
@@ -239,6 +304,7 @@
       // 上传文件
       async uploadFile(file) {
         this.uploadLoading = true;
+        this.hasError = false;
         const formData = new FormData();
         formData.append('file', file);
   
@@ -260,8 +326,12 @@
           
           // 获取上传成功后的问题列表
           await this.fetchQuestions();
+          this.currentStep = 2; // 更新进度状态：选择问题
         } catch (error) {
           alert('文件上传失败: ' + error.message);
+          this.hasError = true;
+          this.errorMessage = '上传文件失败';
+          this.currentStep = 1; // 保持在当前步骤，显示错误状态
         } finally {
           this.uploadLoading = false;
         }
@@ -336,6 +406,8 @@
         }
   
         this.loading = true;
+        this.currentStep = 3; // 更新进度状态：提交任务
+        this.hasError = false;
         try {
           // 从cookie获取user_id
           const userId = this.getCookie('miniai_TSG_Id');
@@ -379,9 +451,13 @@
           }
 
           alert('任务已提交执行');
-          this.fetchData(taskId);
+          await this.fetchData(taskId);
+          this.currentStep = 4; // 更新进度状态：获取数据
         } catch (error) {
           alert('操作失败：' + error.message);
+          this.hasError = true;
+          this.errorMessage = '提交任务失败';
+          // 保持在当前步骤，显示错误状态
         } finally {
           this.loading = false;
         }
@@ -408,6 +484,7 @@
       // 手动获取数据
       async fetchData(task_id) {
         this.dataLoading = true;
+        this.hasError = false;
         try {
           const response = await fetch(`${baseUrl}/api/test_tasks/${task_id}/answers`, {
             headers: {
@@ -428,6 +505,9 @@
           }
         } catch (error) {
           alert('获取数据失败：' + error.message);
+          this.hasError = true;
+          this.errorMessage = '获取数据失败';
+          this.currentStep = 3; // 回退到执行任务步骤
         } finally {
           this.dataLoading = false;
         }
@@ -451,6 +531,30 @@
 
       handleClose(done) {
         done();
+      },
+      
+      // 重置进度
+      resetProgress() {
+        this.currentStep = 0;
+        this.tableData = [];
+        this.questions = [];
+        this.selectedFile = null;
+        this.hasError = false;
+        this.errorMessage = '';
+      },
+      
+      // 重试当前步骤
+      retryCurrentStep() {
+        this.hasError = false;
+        this.errorMessage = '';
+        
+        if (this.currentStep === 1 && this.selectedFile) {
+          // 重试上传
+          this.uploadFile(this.selectedFile);
+        } else if (this.currentStep === 3) {
+          // 重试提交
+          this.handleSubmit();
+        }
       }
     }
   }
@@ -710,5 +814,226 @@
 
   .dialog-footer {
     text-align: right;
+  }
+
+  /* 进度条样式 */
+  .progress-section {
+    margin: 15px 0;
+    transition: all 0.3s ease;
+  }
+  
+  .progress-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #ebeef5;
+    transition: all 0.3s ease;
+  }
+  
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .progress-title {
+    font-size: 14px;
+    color: #606266;
+    font-weight: 500;
+  }
+  
+  .progress-status {
+    font-size: 13px;
+    color: #409EFF;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+  }
+  
+  .progress-status.success {
+    color: #67c23a;
+  }
+
+  .progress-status.error {
+    color: #f56c6c;
+  }
+  
+  .progress-success-icon,
+  .progress-error-icon {
+    font-style: normal;
+    margin-right: 4px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+  }
+  
+  .progress-actions {
+    text-align: right;
+    margin-top: 10px;
+  }
+  
+  .progress-bar-container {
+    padding: 0 5px;
+    position: relative;
+  }
+  
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 25px;
+    z-index: 2;
+  }
+  
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex: 1;
+    transition: all 0.3s ease;
+  }
+  
+  .step-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    position: relative;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .step-icon-inner {
+    font-style: normal;
+    font-size: 12px;
+    color: #909399;
+    transition: color 0.3s ease;
+  }
+  
+  .step-icon-check,
+  .step-icon-error {
+    position: absolute;
+    font-style: normal;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .step-label {
+    font-size: 12px;
+    color: #909399;
+    white-space: nowrap;
+    transition: color 0.3s ease, font-weight 0.3s ease;
+  }
+  
+  .progress-step.active .step-icon {
+    background-color: #67c23a;
+    border-color: #67c23a;
+    box-shadow: 0 2px 10px rgba(103, 194, 58, 0.2);
+    transform: scale(1.05);
+  }
+  
+  .progress-step.active .step-icon-inner {
+    color: #ffffff;
+  }
+  
+  .progress-step.current .step-icon {
+    background-color: #409EFF;
+    border-color: #409EFF;
+    box-shadow: 0 2px 10px rgba(64, 158, 255, 0.2);
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
+  .progress-step.current .step-icon-inner {
+    color: #ffffff;
+  }
+  
+  .progress-step.error .step-icon {
+    background-color: #f56c6c;
+    border-color: #f56c6c;
+    box-shadow: 0 2px 10px rgba(245, 108, 108, 0.2);
+    animation: shake 0.5s ease-in-out;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-3px); }
+    40%, 80% { transform: translateX(3px); }
+  }
+  
+  .progress-step.error .step-icon-inner,
+  .progress-step.error .step-icon-error {
+    color: #ffffff;
+  }
+  
+  .progress-step.active .step-label {
+    color: #303133;
+    font-weight: 500;
+  }
+  
+  .progress-bar {
+    height: 6px;
+    background-color: #ebeef5;
+    border-radius: 10px;
+    position: relative;
+    margin-top: -20px;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .progress-bar-inner {
+    height: 100%;
+    background-color: #67c23a;
+    background-image: linear-gradient(to right, #67c23a, #85ce61);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .progress-bar-inner::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+                  rgba(255, 255, 255, 0) 0%, 
+                  rgba(255, 255, 255, 0.3) 50%, 
+                  rgba(255, 255, 255, 0) 100%);
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  
+  .progress-bar-inner.error-bar {
+    background-color: #f56c6c;
+    background-image: linear-gradient(to right, #f56c6c, #f78989);
   }
   </style>

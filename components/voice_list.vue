@@ -223,7 +223,7 @@ module.exports = {
                 baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: '/nlprag/',
                 // baseUrl: 'http://172.16.99.32:1034',
-                token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
+                token: 'Bearer power3-browbeat-footsie-abridge-gaming-lgtest'
             },
       // 筛选表单
       filterForm: {

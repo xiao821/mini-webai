@@ -1,219 +1,465 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>智能助手</title>
-     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-     <script src="./external_js/marked.min.js"></script>
-     <script src="./external_js/purify.min.js"></script>
-     <script src="./external_js/sweetalert2.js"></script>
+    <script src="./external_js/marked.min.js"></script>
+    <script src="./external_js/purify.min.js"></script>
+    <script src="./external_js/sweetalert2.js"></script>
 
     <!-- <link rel="stylesheet" href="./css/tailwindcss.css"> -->
 
-    <link rel="stylesheet" href="./css/index.css">
-</head>
-<body class="bg-gray-50 text-gray-900 min-h-screen flex">
+    <link rel="stylesheet" href="./css/index.css" />
+  </head>
+  <body class="bg-gray-50 text-gray-900 min-h-screen flex">
+    <!-- 登录层：默认显示，只有登录成功后隐藏 -->
+    <div
+      id="login-container"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-100"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-8 w-80">
+        <h2 class="text-2xl font-semibold text-center mb-6">用户登录</h2>
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label for="login-username" class="block text-gray-700"
+              >用户名</label
+            >
+            <input
+            style="padding: 10px;"
+              type="text"
+              id="login-username"
+              name="username"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="请输入用户名"
+              required
+            />
+          </div>
+          <div>
+            <label for="login-password" class="block text-gray-700">密码</label>
+            <input
+            style="padding: 10px;"
+              type="password"
+              id="login-password"
+              name="password"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="请输入密码"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+          >
+            登录
+          </button>
+        </form>
+      </div>
+    </div>
     <!-- 侧边栏 -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
-        <!-- 侧边栏标题 -->
-        <div class="p-4 border-b border-gray-200">
-            <h1 class="text-xl font-semibold text-blue-600 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                知识库智能助手
-            </h1>
+    <aside
+      class="w-64 bg-white border-r border-gray-200 flex flex-col h-screen"
+    >
+      <!-- 侧边栏标题 -->
+      <div class="p-4 border-b border-gray-200">
+        <h1 class="text-xl font-semibold text-blue-600 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+            />
+          </svg>
+          知识库智能助手
+        </h1>
+      </div>
+
+      <!-- 模式选择 -->
+      <div class="p-4 border-b border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 mb-2">知识库类别</h2>
+        <div class="mode-buttons-container flex flex-col space-y-2">
+          <!-- 按钮将被动态插入到这里 -->
         </div>
-        
-        <!-- 模式选择 -->
-        <div class="p-4 border-b border-gray-200">
-            <h2 class="text-sm font-medium text-gray-500 mb-2">知识库类别</h2>
-            <div class="mode-buttons-container flex flex-col space-y-2">
-                <!-- 按钮将被动态插入到这里 -->
-            </div>
+      </div>
+
+      <!-- 对话历史 -->
+      <div class="flex-1 overflow-auto scrollbar-hide">
+        <div class="p-4">
+          <h2
+            class="text-sm font-medium text-gray-500 mb-2 flex justify-between items-center"
+          >
+            对话历史
+            <button
+              id="new-chat"
+              class="text-blue-600 hover:text-blue-800 text-xs"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div id="conversation-list" class="space-y-2">
+            <!-- 对话历史会在这里动态生成 -->
+          </div>
         </div>
-        
-        <!-- 对话历史 -->
-        <div class="flex-1 overflow-auto scrollbar-hide">
-            <div class="p-4">
-                <h2 class="text-sm font-medium text-gray-500 mb-2 flex justify-between items-center">
-                    对话历史
-                    <button id="new-chat" class="text-blue-600 hover:text-blue-800 text-xs">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                    </button>
-                </h2>
-                <div id="conversation-list" class="space-y-2">
-                    <!-- 对话历史会在这里动态生成 -->
-                </div>
-            </div>
-        </div>
+      </div>
     </aside>
-    
+
     <!-- 主内容区 -->
     <main class="flex-1 flex flex-col h-screen relative">
-        <!-- 顶部导航 -->
-        <header class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-            <div class="flex items-center">
-                <div class="flex items-center">
-                    <div class="text-lg font-semibold" id="current-mode-title">通用咨询</div>
-                    <!-- 面包屑导航 -->
-                    <div class="breadcrumb-container flex items-center ml-2">
-                        <span id="breadcrumb-separator" class="mx-2 text-gray-400">&gt;</span>
-                        <div id="selected-category-breadcrumb" class="flex items-center">
-                            <span id="selected-category-text" class="text-lg font-semibold"></span>
-                            <button id="clear-category" class="ml-1 text-gray-400 hover:text-gray-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-left: 8px;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+      <!-- 顶部导航 -->
+      <header
+        class="p-4 border-b border-gray-200 bg-white flex items-center justify-between"
+      >
+        <div class="flex items-center">
+          <div class="flex items-center">
+            <div class="text-lg font-semibold" id="current-mode-title">
+              通用咨询
             </div>
-            <div class="flex items-center space-x-4">
-                <!-- 用户信息 -->
-                <div class="flex items-center">
-                    <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                        U
-                    </div>
-                    <div class="ml-2">
-                        <div class="text-sm font-medium" id="user-name" style="margin-bottom: 5px;">测试用户</div>
-                        <div class="text-xs text-gray-500" style="margin-top: 5px;">登录时间: <span id="login-time"></span></div>
-                    </div>
-                </div>
-                <!-- 功能按钮 -->
-                <div class="flex space-x-2">
-                    <button class="header-button" id="question">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </button>
-                    <!-- <button class="header-button" id="setting">
+            <!-- 面包屑导航 -->
+            <div class="breadcrumb-container flex items-center ml-2">
+              <span id="breadcrumb-separator" class="mx-2 text-gray-400"
+                >&gt;</span
+              >
+              <div id="selected-category-breadcrumb" class="flex items-center">
+                <span
+                  id="selected-category-text"
+                  class="text-lg font-semibold"
+                ></span>
+                <button
+                  id="clear-category"
+                  class="ml-1 text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style="margin-left: 8px"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 用户信息 -->
+          <div class="flex items-center">
+            <div
+              class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold"
+            >
+              U
+            </div>
+            <div class="ml-2">
+              <div
+                class="text-sm font-medium"
+                id="user-name"
+                style="margin-bottom: 5px"
+              >
+                测试用户
+              </div>
+              <div class="text-xs text-gray-500" style="margin-top: 5px">
+                登录时间: <span id="login-time"></span>
+              </div>
+            </div>
+          </div>
+          <!-- 功能按钮 -->
+          <div class="flex space-x-2">
+            <button class="header-button" id="question">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            <!-- <button class="header-button" id="setting">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button> -->
-                    <a href="Manager.html" target="_blank" class="header-button text-sm text-blue-600 hover:text-blue-800" title="进入后台管理系统">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                        </svg>
-                    </a>
-                </div>
-            </div>
-        </header>
-        
-        <!-- 聊天内容区 -->
-        <div id="chat-container" class="flex-1 overflow-auto p-4 space-y-6 scrollbar-hide bg-gray-50">
-            <!-- 欢迎信息 -->
-            <div id="welcome-message-container" class="flex items-start">
-                
-            </div>
-            <!-- 聊天消息会在这里动态生成 -->
+            <a
+              href="Manager.html"
+              target="_blank"
+              class="header-button text-sm text-blue-600 hover:text-blue-800"
+              title="进入后台管理系统"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+            </a>
+          </div>
         </div>
+      </header>
 
-        <!-- 输入区域 -->
-        <div class="p-4 border-t border-gray-200 bg-white">
-            <div class="flex items-center mb-4 space-x-4">
-                <label class="flex items-center cursor-pointer">
-                    <input type="radio" name="model-select" id="model-r1" class="form-radio text-blue-600 h-4 w-4" value="r1" checked />
-                    <span class="ml-2 text-sm font-medium">深度思考(DeepSeek)</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="radio" name="model-select" id="model-qw" class="form-radio text-green-600 h-4 w-4" value="qw" />
-                    <span class="ml-2 text-sm font-medium">通义千问(QW)</span>
-                </label>
-            </div>
-            <form id="chat-form" class="flex items-end">
-                <div class="flex-1 relative">
-                    <textarea 
-                        id="message-input" 
-                        class="w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent p-3 pl-4 pr-10 resize-none h-14 max-h-60 overflow-auto scrollbar-hide"
-                        placeholder="输入您的问题..."
-                        rows="1"
-                    ></textarea>
-                    <div class="absolute right-3 bottom-3 text-gray-400 flex">
-                        <button type="button" class="p-1 hover:text-gray-600" id="record-button">
-                            <svg id="mic-off" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                <line x1="12" y1="19" x2="12" y2="23"></line>
-                                <line x1="8" y1="23" x2="16" y2="23"></line>
-                            </svg>
-                            <svg id="mic-on" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                <line x1="12" y1="19" x2="12" y2="23"></line>
-                                <line x1="8" y1="23" x2="16" y2="23"></line>
-                            </svg>
-                        </button>
-                        <button type="button" class="p-1 hover:text-gray-600" id="Uploadfile">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                        </button>
-                    </div>
-                </div>
-                <button 
-                    type="submit" 
-                    id="send-button"
-                    class="send-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed h-14 w-14"
-                    disabled
+      <!-- 聊天内容区 -->
+      <div
+        id="chat-container"
+        class="flex-1 overflow-auto p-4 space-y-6 scrollbar-hide bg-gray-50"
+      >
+        <!-- 欢迎信息 -->
+        <div id="welcome-message-container" class="flex items-start"></div>
+        <!-- 聊天消息会在这里动态生成 -->
+      </div>
+
+      <!-- 输入区域 -->
+      <div class="p-4 border-t border-gray-200 bg-white">
+        <div class="flex items-center mb-4 space-x-4">
+          <label class="flex items-center cursor-pointer">
+            <input
+              type="radio"
+              name="model-select"
+              id="model-r1"
+              class="form-radio text-blue-600 h-4 w-4"
+              value="r1"
+              checked
+            />
+            <span class="ml-2 text-sm font-medium">深度思考(DeepSeek)</span>
+          </label>
+          <label class="flex items-center cursor-pointer">
+            <input
+              type="radio"
+              name="model-select"
+              id="model-qw"
+              class="form-radio text-green-600 h-4 w-4"
+              value="qw"
+            />
+            <span class="ml-2 text-sm font-medium">通义千问(QW)</span>
+          </label>
+        </div>
+        <form id="chat-form" class="flex items-end">
+          <div class="flex-1 relative">
+            <textarea
+              id="message-input"
+              class="w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent p-3 pl-4 pr-10 resize-none h-14 max-h-60 overflow-auto scrollbar-hide"
+              placeholder="输入您的问题..."
+              rows="1"
+            ></textarea>
+            <div class="absolute right-3 bottom-3 text-gray-400 flex">
+              <button
+                type="button"
+                class="p-1 hover:text-gray-600"
+                id="record-button"
+              >
+                <svg
+                  id="mic-off"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#888888"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                </button>
-            </form>
-        </div>
-        
-        <!-- 反馈弹窗 -->
-        <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="feedback-modal-content bg-white rounded-lg max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold mb-4">您对这个回答有什么建议？</h3>
-                <form id="feedback-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">反馈类型</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="信息不准确" class="feedback-radio">
-                                <span class="ml-2 text-sm text-gray-700">信息不准确</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="信息不完整" class="feedback-radio">
-                                <span class="ml-2 text-sm text-gray-700">信息不完整</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="回答不相关" class="feedback-radio">
-                                <span class="ml-2 text-sm text-gray-700">回答不相关</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="feedback-type" value="其他问题" class="feedback-radio">
-                                <span class="ml-2 text-sm text-gray-700">其他问题</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="feedback-detail" class="block text-sm font-medium text-gray-700 mb-1">详细描述（选填）</label>
-                        <textarea 
-                            style="padding: 10px;"
-                            id="feedback-detail" 
-                            rows="3" 
-                            class="feedback-textarea shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                            placeholder="请描述您的具体反馈..."></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-3">
-                        <button 
-                            type="button" 
-                            id="cancel-feedback" 
-                            class="feedback-cancel-button px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            取消
-                        </button>
-                        <button 
-                            style="color: white;"
-                            type="submit" 
-                            class="feedback-submit-button px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            提交反馈
-                        </button>
-                    </div>
-                </form>
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  ></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <svg
+                  id="mic-on"
+                  style="display: none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#FF0000"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  ></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="p-1 hover:text-gray-600"
+                id="Uploadfile"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  />
+                </svg>
+              </button>
             </div>
+          </div>
+          <button
+            type="submit"
+            id="send-button"
+            class="send-button ml-2 bg-blue-600 text-white p-3 rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed h-14 w-14"
+            disabled
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              />
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- 反馈弹窗 -->
+      <div
+        id="feedback-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div
+          class="feedback-modal-content bg-white rounded-lg max-w-md w-full p-6"
+        >
+          <h3 class="text-lg font-semibold mb-4">您对这个回答有什么建议？</h3>
+          <form id="feedback-form" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >反馈类型</label
+              >
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    name="feedback-type"
+                    value="信息不准确"
+                    class="feedback-radio"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">信息不准确</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    name="feedback-type"
+                    value="信息不完整"
+                    class="feedback-radio"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">信息不完整</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    name="feedback-type"
+                    value="回答不相关"
+                    class="feedback-radio"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">回答不相关</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    name="feedback-type"
+                    value="其他问题"
+                    class="feedback-radio"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">其他问题</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label
+                for="feedback-detail"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >详细描述（选填）</label
+              >
+              <textarea
+                style="padding: 10px"
+                id="feedback-detail"
+                rows="3"
+                class="feedback-textarea shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                placeholder="请描述您的具体反馈..."
+              ></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button
+                type="button"
+                id="cancel-feedback"
+                class="feedback-cancel-button px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                取消
+              </button>
+              <button
+                style="color: white"
+                type="submit"
+                class="feedback-submit-button px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                提交反馈
+              </button>
+            </div>
+          </form>
         </div>
-        <!-- 侧边弹框 -->
-        <!-- <div id="theme-sidebar" class="sidebar hidden">
+      </div>
+      <!-- 侧边弹框 -->
+      <!-- <div id="theme-sidebar" class="sidebar hidden">
             <div class="sidebar-content">
                 <span class="close-button">&times;</span>
             </div>
@@ -221,28 +467,114 @@
     </main>
 
     <!-- 右侧知识分类区域 -->
-    <aside class="w-72 bg-white border-l border-gray-200 flex flex-col h-screen overflow-hidden">
-        <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800 flex items-center justify-between" style="margin: 0;">
-                <div>知识分类: <span id="selected-category" style="color: red;">无</span></div>
-                <button id="clear-category-top" class="text-gray-400 hover:text-gray-600 hidden" style="color: red;">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </h2>
-            <p class="text-sm text-gray-500 mt-1">点击选择相关分类</p>
+    <aside
+      class="w-72 bg-white border-l border-gray-200 flex flex-col h-screen overflow-hidden"
+    >
+      <div class="p-4 border-b border-gray-200">
+        <h2
+          class="text-lg font-semibold text-gray-800 flex items-center justify-between"
+          style="margin: 0"
+        >
+          <div>
+            知识分类: <span id="selected-category" style="color: red">无</span>
+          </div>
+          <button
+            id="clear-category-top"
+            class="text-gray-400 hover:text-gray-600 hidden"
+            style="color: red"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">点击选择相关分类</p>
+      </div>
+
+      <div class="flex-1 overflow-auto p-4">
+        <div id="knowledge-category-tree" class="space-y-2">
+          <!-- 知识分类树将在这里动态生成 -->
+          <div class="text-sm text-gray-500 animate-pulse">加载中...</div>
         </div>
-        
-        <div class="flex-1 overflow-auto p-4">
-            <div id="knowledge-category-tree" class="space-y-2">
-                <!-- 知识分类树将在这里动态生成 -->
-                <div class="text-sm text-gray-500 animate-pulse">加载中...</div>
-            </div>
-        </div>
+      </div>
     </aside>
 
     <script src="./external_js/axios.min.js"></script>
     <script type="module" src="js/index.js"></script>
-</body>
+    <script>
+      // 注意：生产环境中建议将登录校验放在后端，本示例仅用于演示前端简单验证！
+      const loginForm = document.getElementById("login-form");
+      const loginContainer = document.getElementById("login-container");
+
+      // 定义正确的账号和密码
+      const CORRECT_USERNAME = "lgtest1";
+      const CORRECT_PASSWORD = "gE9snBbzSmC3WL";
+
+      loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const username = document.getElementById("login-username").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        // 模拟调用后端的POST接口 /auth/login
+        // 此处使用axios.post, 实际请求时需要处理跨域和后端逻辑
+        axios
+          .post("/auth/login", { username, password })
+          .then((response) => {
+            // 如果接口返回成功，则执行下面的判断
+            if (
+              username === CORRECT_USERNAME &&
+              password === CORRECT_PASSWORD
+            ) {
+              // 此处可以将登录状态存入 sessionStorage，防止刷新后再登录
+            //   sessionStorage.setItem("isAuthenticated", "true");id_b13zux7f
+                // 设置过期时间为 2099 年 12 月 31 日 23:59:59 GMT
+              loginContainer.style.display = "none"; // 登录成功后隐藏登录层
+            } else {
+              // 用户名和密码不匹配
+              Swal.fire({
+                icon: "error",
+                title: "登录失败",
+                text: "用户名或密码不正确，请重试！",
+              });
+            }
+          })
+          .catch((error) => {
+            // 如果没有后端接口或出错，退回到前端判断
+            if (
+              username === CORRECT_USERNAME &&
+              password === CORRECT_PASSWORD
+            ) {
+              sessionStorage.setItem("isAuthenticated", "true");
+              loginContainer.style.display = "none";
+            } else {
+              Swal.fire({
+                icon: "error",
+                title: "登录失败",
+                text: "用户名或密码不正确，请重试！",
+              });
+            }
+          });
+      });
+
+      // 页面加载时检查是否已登录
+      window.addEventListener("DOMContentLoaded", function () {
+        if (sessionStorage.getItem("isAuthenticated") === "true") {
+          loginContainer.style.display = "none";
+        } else {
+          loginContainer.style.display = "flex";
+        }
+      });
+    </script>
+  </body>
 </html>

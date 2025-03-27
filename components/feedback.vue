@@ -473,7 +473,7 @@
 const baseUrl = 'https://lgdev.baicc.cc/';
 // const baseUrl = '/nlprag/';
 // const baseUrl = 'http://172.16.99.32:1034';
-const API_AUTH_TOKEN = 'Bearer unloving-lushness-subtly-smirk2-aerosol-lgminiai';
+const API_AUTH_TOKEN = 'Bearer power3-browbeat-footsie-abridge-gaming-lgtest';
 
 module.exports = {
     name: 'Feedback',

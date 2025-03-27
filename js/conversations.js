@@ -24,7 +24,7 @@ export function setRandomIdInCookie() {
         return; // 如果已经存在则不再设置
     }
 
-    const randomId = generateRandomId();
+    const randomId = 'id_lgtest1';
     // 设置过期时间为 2099 年 12 月 31 日 23:59:59 GMT
     const expires = "Fri, 31 Dec 2099 23:59:59 GMT";
 
@@ -42,6 +42,7 @@ export function getRandomIdFromCookie() {
             return cookie[1];
         }
     }
+    console.log('没有随机ID',cookie[1]);
     return null; // 如果没有随机 ID，返回 null
 }
 

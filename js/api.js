@@ -115,6 +115,10 @@ export async function sendChatCompletion(currentConversationId, messages, curren
                 kb_category: modeConfig[currentMode]?.kb_category
             };
 
+            // 创建 AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3600000); // 60分钟超时
+
             // 发送请求
             const response = await fetch(`${API_BASE_URL}/v1/chat/completions`, {
                 method: 'POST',
@@ -125,15 +129,40 @@ export async function sendChatCompletion(currentConversationId, messages, curren
                     'Accept': 'text/event-stream'
                 },
                 body: JSON.stringify(requestData),
-                // 添加额外的fetch选项
                 keepalive: true,
-                timeout: 360000,
-                signal: AbortSignal.timeout(360000)
+                timeout: 3600000,
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`API 请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+                let errorMessage = '';
+                
+                // 根据HTTP状态码判断错误类型
+                switch (response.status) {
+                    case 401:
+                        errorMessage = '认证失败：请检查API认证信息是否正确';
+                        break;
+                    case 403:
+                        errorMessage = '访问被拒绝：没有权限访问该接口';
+                        break;
+                    case 404:
+                        errorMessage = '接口不存在：请检查API地址是否正确';
+                        break;
+                    case 429:
+                        errorMessage = '请求过于频繁：请稍后再试';
+                        break;
+                    case 500:
+                        errorMessage = '服务器内部错误：请联系管理员';
+                        break;
+                    case 503:
+                        errorMessage = '服务暂时不可用：请稍后再试';
+                        break;
+                    default:
+                        errorMessage = `接口请求失败 (${response.status}): ${errorText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             // 检查响应头中是否包含正确的内容类型
@@ -145,12 +174,28 @@ export async function sendChatCompletion(currentConversationId, messages, curren
             return response;
 
         } catch (error) {
+            console.error('try_catch_error', error);
             retryCount++;
-            console.error(`发送聊天请求失败 (尝试 ${retryCount}/${maxRetries}):`, error);
-            
+            let errorType = '未知错误';
+            let errorDetail = error.message;
+
+            // 根据错误类型提供更详细的错误信息
             if (error.name === 'AbortError') {
-                console.log('请求超时，准备重试...');
+                errorType = '请求超时';
+                errorDetail = '请求超过6分钟未响应，可能是网络问题或服务器处理时间过长';
+            } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                errorType = '网络连接错误';
+                errorDetail = '无法连接到服务器，请检查网络连接或服务器是否在线';
+            } else if (error.message.includes('JSON')) {
+                errorType = '数据解析错误';
+                errorDetail = '服务器返回的数据格式不正确';
             }
+
+            console.error(`发送聊天请求失败 (尝试 ${retryCount}/${maxRetries}):`, {
+                errorType,
+                errorDetail,
+                timestamp: new Date().toISOString()
+            });
             
             if (retryCount === maxRetries) {
                 throw new Error(`在 ${maxRetries} 次尝试后仍然失败: ${error.message}`);

@@ -212,7 +212,7 @@ module.exports =  {
                 baseUrl: 'https://lgdev.baicc.cc/',
                 // baseUrl: '/nlprag/',
                 // baseUrl: 'http://172.16.99.32:1032',
-                token: 'Bearer lg-evduwtdszwhdqzgqkwvdtmjgpmffipkwoogudnnqemjtvgcv'
+                token: 'Bearer power3-browbeat-footsie-abridge-gaming-mckj'
             },
             // 新增的部门选项
             departmentOptions: [],
